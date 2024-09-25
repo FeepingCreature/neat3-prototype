@@ -20,6 +20,9 @@ class ClassType : Type {
     }
 
     override Value call(string name, Value thisptr, Value[] args) {
+        if (name == "isNull") {
+            return Value(0);
+        }
         if (auto method = name in methods) {
             return (*method)(thisptr, args);
         }
@@ -93,6 +96,21 @@ class ArrayType : Type {
     }
 }
 
+class NullType : Type {
+    static NullType instance;
+
+    static this() {
+        instance = new NullType();
+    }
+
+    override Value call(string name, Value thisptr, Value[] args) {
+        if (name == "isNull") {
+            return Value(1);
+        }
+        throw new Exception("Null object has no methods except isNull");
+    }
+}
+
 struct Value {
     private {
         Type _type;
@@ -118,6 +136,18 @@ struct Value {
         _obj = type.fields.dup;
     }
 
+    this(typeof(null)) {
+        _type = NullType.instance;
+    }
+
+    static Value nullValue;
+
+    static this() {
+        nullValue = Value(null);
+    }
+
+    @property Type type() { return _type; }
+
     T expect(T)() {
         static if (is(T == int)) {
             enforce(_type == IntType.instance, "Expected int, got " ~ typeid(_type).toString());
@@ -133,8 +163,25 @@ struct Value {
         }
     }
 
-    Value opCall(string name, Value[] args...) {
-        enforce(_type !is null, "Cannot call method on null type");
+    void setField(string fieldName, Value value) {
+        if (auto classType = cast(ClassType)_type) {
+            _obj[fieldName] = value;
+        } else {
+            throw new Exception("Cannot set field on non-object type");
+        }
+    }
+
+    Value getField(string fieldName) {
+        if (auto classType = cast(ClassType)_type) {
+            if (auto field = fieldName in _obj) {
+                return *field;
+            }
+            throw new Exception("Field not found: " ~ fieldName);
+        }
+        throw new Exception("Cannot get field from non-object type");
+    }
+
+    Value call(string name, Value[] args) {
         return _type.call(name, this, args);
     }
 
@@ -173,9 +220,17 @@ class ClassEntry : ModuleEntry {
     }
 
     override Value call(Value[] args) {
-        assert(args.length == 0);
         // Create a new instance of the class
-        return Value(classType);
+        Value instance = Value(classType);
+
+        // Call the constructor (init method) if it exists
+        if ("init" in classType.methods) {
+            classType.methods["init"](instance, args);
+        } else if (args.length > 0) {
+            throw new Exception("Constructor called with arguments, but no init method defined for class " ~ name);
+        }
+
+        return instance;
     }
 }
 

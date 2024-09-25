@@ -67,6 +67,49 @@ class FunctionDecl : ASTNode {
     }
 }
 
+class ClassDecl : ASTNode {
+    string name;
+    string[] fields;
+    FunctionDecl[] methods;
+
+    this(string filename, int line, string name, string[] fields, FunctionDecl[] methods) {
+        super(filename, line);
+        this.name = name;
+        this.fields = fields;
+        this.methods = methods;
+    }
+
+    override string compile() {
+        string[] compiledMethods;
+        foreach (method; methods) {
+            compiledMethods ~= compileMethod(method);
+        }
+
+        string fieldDeclarations = fields.map!(f => "\"" ~ f ~ "\": Value(0)").join(", ");
+
+        return "auto " ~ name ~ "Type = new ClassType([" ~ fieldDeclarations ~ "]);\n" ~
+               compiledMethods.join("\n") ~
+               "mod.add(new ClassEntry(\"" ~ name ~ "\", " ~ name ~ "Type));\n";
+    }
+
+    string compileMethod(FunctionDecl method) {
+        string[] compiledBody;
+        foreach (stmt; method.body) {
+            compiledBody ~= stmt.compile();
+        }
+
+        string paramList = method.params.map!(p => "Value " ~ p).join(", ");
+        string functionBody = compiledBody.join("\n    ");
+
+        return name ~ "Type.methods[\"" ~ method.name ~ "\"] = (Value thisptr, Value[] args) {\n" ~
+               "    enforce(args.length == " ~ to!string(method.params.length) ~ ", \"" ~ method.name ~ " expects " ~ to!string(method.params.length) ~ " argument(s)\");\n" ~
+               method.params.enumerate.map!(t => "    Value " ~ t.value ~ " = args[" ~ to!string(t.index) ~ "];").join("\n") ~ "\n" ~
+               "    " ~ functionBody ~ "\n" ~
+               "    return Value(0);\n" ~ // Default return value if none specified
+               "};\n";
+    }
+}
+
 class VariableDecl : ASTNode {
     string name;
     ASTNode initializer;
@@ -96,7 +139,10 @@ class MethodCall : ASTNode {
 
     override string compile() {
         string[] compiledArgs = args.map!(a => a.compile()).array;
-        return "(" ~ object.compile() ~ ")(\"" ~ method ~ "\", [" ~ compiledArgs.join(", ") ~ "])";
+        string objectCode = (cast(Identifier)object !is null && (cast(Identifier)object).name == "this")
+            ? "thisptr"
+            : object.compile();
+        return "(" ~ objectCode ~ ").call(\"" ~ method ~ "\", [" ~ compiledArgs.join(", ") ~ "])";
     }
 }
 
@@ -178,7 +224,11 @@ class AssignmentStatement : ASTNode {
     }
 
     override string compile() {
-        return lhs.compile() ~ " = " ~ rhs.compile() ~ ";";
+        if (auto fa = cast(FieldAccess)lhs) {
+            return "(" ~ fa.object.compile() ~ ").setField(\"" ~ fa.field ~ "\", " ~ rhs.compile() ~ ");";
+        } else {
+            return lhs.compile() ~ " = " ~ rhs.compile() ~ ";";
+        }
     }
 }
 
@@ -217,6 +267,9 @@ class Identifier : ASTNode {
     }
 
     override string compile() {
+        if (name == "this") {
+            return "thisptr";
+        }
         return name;
     }
 }
@@ -231,6 +284,31 @@ class IntegerLiteral : ASTNode {
 
     override string compile() {
         return "Value(" ~ to!string(value) ~ ")";
+    }
+}
+
+class NullLiteral : ASTNode {
+    this(string filename, int line) {
+        super(filename, line);
+    }
+
+    override string compile() {
+        return "Value.nullValue";
+    }
+}
+
+class FieldAccess : ASTNode {
+    ASTNode object;
+    string field;
+
+    this(string filename, int line, ASTNode object, string field) {
+        super(filename, line);
+        this.object = object;
+        this.field = field;
+    }
+
+    override string compile() {
+        return "(" ~ object.compile() ~ ").getField(\"" ~ field ~ "\")";
     }
 }
 
@@ -270,10 +348,19 @@ class Parser {
     }
 
     void skipComments() {
-        while (accept("/*")) {
-            while (position < input.length && !accept("*/")) {
-                if (input[position] == '\n') line++;
-                position++;
+        while (true) {
+            skipWhitespace();
+            if (accept("//")) {
+                while (position < input.length && input[position] != '\n') {
+                    position++;
+                }
+            } else if (accept("/*")) {
+                while (position < input.length && !accept("*/")) {
+                    if (input[position] == '\n') line++;
+                    position++;
+                }
+            } else {
+                break;
             }
         }
     }
@@ -298,6 +385,8 @@ class Parser {
             skipComments();
             if (accept("function")) {
                 nodes ~= parseFunctionDecl();
+            } else if (accept("class")) {
+                nodes ~= parseClassDecl();
             } else {
                 break;
             }
@@ -324,6 +413,25 @@ class Parser {
         }
 
         return new FunctionDecl(filename, line, name, params, body);
+    }
+
+    ClassDecl parseClassDecl() {
+        string name = parseIdentifier();
+        string[] fields;
+        FunctionDecl[] methods;
+
+        expect("{");
+        while (!accept("}")) {
+            if (accept("function")) {
+                methods ~= parseFunctionDecl();
+            } else {
+                expect("auto");
+                fields ~= parseIdentifier();
+                expect(";");
+            }
+        }
+
+        return new ClassDecl(filename, line, name, fields, methods);
     }
 
     ASTNode parseStatement() {
@@ -398,16 +506,19 @@ class Parser {
 
         while (true) {
             if (accept(".")) {
-                string method = parseIdentifier();
-                ASTNode[] args;
-                expect("(");
-                if (!accept(")")) {
-                    do {
-                        args ~= parseExpression();
-                    } while (accept(","));
-                    expect(")");
+                string identifier = parseIdentifier();
+                if (accept("(")) {
+                    ASTNode[] args;
+                    if (!accept(")")) {
+                        do {
+                            args ~= parseExpression();
+                        } while (accept(","));
+                        expect(")");
+                    }
+                    left = new MethodCall(filename, line, left, identifier, args);
+                } else {
+                    left = new FieldAccess(filename, line, left, identifier);
                 }
-                left = new MethodCall(filename, line, left, method, args);
             } else {
                 break;
             }
@@ -422,6 +533,8 @@ class Parser {
 
         if (position < input.length && input[position].isDigit) {
             return parseIntegerLiteral();
+        } else if (accept("null")) {
+            return new NullLiteral(filename, line);
         } else {
             string id = parseIdentifier();
             if (accept("(")) {
