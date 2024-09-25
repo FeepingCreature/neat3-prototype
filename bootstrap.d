@@ -7,6 +7,29 @@ import std.string;
 import std.conv;
 import std.algorithm;
 
+/**
+
+Simplifications for the bootstrap, 0.1 version of the language:
+
+- D bootstrap implementation language, D compile target
+  (this lets us use arrays and hashmaps in the runtime, saving a lot of effort)
+- untyped runtime only, no types, no constraints
+- classes, fields and methods (for the AST), hence object method calls
+- global functions and function calls
+- arrays (can be typeless)
+- no modules, single file only
+- no structs, classes can handle it
+- enough runtime to do basic I/O: read file to char[], write char[] to file, print to console.
+- mutable variables, everything is mutable
+- no typechecks, all done as asserts in the runtime
+- runtime types: class, array, int.
+- blocks, if statements, while statements (maybe array-element loops, as a treat)
+- no GC/RC, leak everything
+- no error propagation, every error kills the program right there (assert runtime function)
+- no operands at all, builtin type functions only (.add, .sub, .concat etc.), this also handles string ops
+  (.slice, .concat), and conversions (.toInt, .toString).
+8**/
+
 class ASTNode {
     string filename;
     int line;
