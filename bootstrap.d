@@ -28,7 +28,8 @@ Simplifications for the bootstrap, 0.1 version of the language:
 - no error propagation, every error kills the program right there (assert runtime function)
 - no operands at all, builtin type functions only (.add, .sub, .concat etc.), this also handles string ops
   (.slice, .concat), and conversions (.toInt, .toString).
-8**/
+- basic inheritance
+**/
 
 class ASTNode {
     string filename;
@@ -57,7 +58,17 @@ class Program : ASTNode {
         foreach (node; nodes) {
             compiledNodes ~= node.compile();
         }
-        return "import std.stdio;\nimport std.exception;\nimport runtime;\n\nvoid main() {\n    auto mod = new Module();\n" ~ compiledNodes.join("\n") ~ "\n    mod.call(\"main\", []);\n}";
+        return "import std.stdio;
+import std.algorithm;
+import std.array;
+import std.exception;
+import runtime;
+
+void main(string[] args) {
+    auto mod = new Module();
+" ~ compiledNodes.join("\n") ~ "
+    mod.call(\"main\", [Value(args.map!(a => Value(a.map!(c => Value(cast(int)c)).array)).array)]);
+}";
     }
 }
 
@@ -92,12 +103,14 @@ class FunctionDecl : ASTNode {
 
 class ClassDecl : ASTNode {
     string name;
+    string parent;
     string[] fields;
     FunctionDecl[] methods;
 
-    this(string filename, int line, string name, string[] fields, FunctionDecl[] methods) {
+    this(string filename, int line, string name, string parent, string[] fields, FunctionDecl[] methods) {
         super(filename, line);
         this.name = name;
+        this.parent = parent;
         this.fields = fields;
         this.methods = methods;
     }
@@ -109,8 +122,9 @@ class ClassDecl : ASTNode {
         }
 
         string fieldDeclarations = fields.map!(f => "\"" ~ f ~ "\": Value(0)").join(", ");
+        string parentDeclaration = parent ? "mod.get!ClassEntry(\"" ~ parent ~ "\").classType" : "null";
 
-        return "auto " ~ name ~ "Type = new ClassType([" ~ fieldDeclarations ~ "]);\n" ~
+        return "auto " ~ name ~ "Type = new ClassType(" ~ parentDeclaration ~ ", [" ~ fieldDeclarations ~ "]);\n" ~
                compiledMethods.join("\n") ~
                "mod.add(new ClassEntry(\"" ~ name ~ "\", " ~ name ~ "Type));\n";
     }
@@ -310,6 +324,19 @@ class IntegerLiteral : ASTNode {
     }
 }
 
+class StringLiteral : ASTNode {
+    string value;
+
+    this(string filename, int line, string value) {
+        super(filename, line);
+        this.value = value;
+    }
+
+    override string compile() {
+        return "Value(" ~ value.map!(c => to!string(cast(int)c)).join(", ") ~ ")";
+    }
+}
+
 class NullLiteral : ASTNode {
     this(string filename, int line) {
         super(filename, line);
@@ -440,6 +467,10 @@ class Parser {
 
     ClassDecl parseClassDecl() {
         string name = parseIdentifier();
+        string parent = null;
+        if (accept(":")) {
+            parent = parseIdentifier();
+        }
         string[] fields;
         FunctionDecl[] methods;
 
@@ -454,7 +485,7 @@ class Parser {
             }
         }
 
-        return new ClassDecl(filename, line, name, fields, methods);
+        return new ClassDecl(filename, line, name, parent, fields, methods);
     }
 
     ASTNode parseStatement() {
@@ -556,6 +587,8 @@ class Parser {
 
         if (position < input.length && input[position].isDigit) {
             return parseIntegerLiteral();
+        } else if (accept("\"")) {
+            return parseStringLiteral();
         } else if (accept("null")) {
             return new NullLiteral(filename, line);
         } else {
@@ -582,6 +615,19 @@ class Parser {
         }
         int value = to!int(input[start .. position]);
         return new IntegerLiteral(filename, line, value);
+    }
+
+    StringLiteral parseStringLiteral() {
+        int start = position;
+        while (position < input.length && input[position] != '"') {
+            if (input[position] == '\\') {
+                position++;
+            }
+            position++;
+        }
+        expect("\"");
+        string value = input[start .. position - 1];
+        return new StringLiteral(filename, line, value);
     }
 }
 
