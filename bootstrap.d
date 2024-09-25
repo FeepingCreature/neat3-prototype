@@ -346,6 +346,19 @@ class NullLiteral : ASTNode {
         return "Value.nullValue";
     }
 }
+class ArrayLiteral : ASTNode {
+    ASTNode[] elements;
+
+    this(string filename, int line, ASTNode[] elements) {
+        super(filename, line);
+        this.elements = elements;
+    }
+
+    override string compile() {
+        string[] compiledElements = elements.map!(e => e.compile()).array;
+        return "Value([" ~ compiledElements.join(", ") ~ "])";
+    }
+}
 
 class FieldAccess : ASTNode {
     ASTNode object;
@@ -591,6 +604,8 @@ class Parser {
             return parseStringLiteral();
         } else if (accept("null")) {
             return new NullLiteral(filename, line);
+        } else if (accept("[")) {
+            return parseArrayLiteral();
         } else {
             string id = parseIdentifier();
             if (accept("(")) {
@@ -606,6 +621,17 @@ class Parser {
                 return new Identifier(filename, line, id);
             }
         }
+    }
+
+    ArrayLiteral parseArrayLiteral() {
+        ASTNode[] elements;
+        if (!accept("]")) {
+            do {
+                elements ~= parseExpression();
+            } while (accept(","));
+            expect("]");
+        }
+        return new ArrayLiteral(filename, line, elements);
     }
 
     IntegerLiteral parseIntegerLiteral() {

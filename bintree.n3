@@ -1,4 +1,4 @@
-function main() {
+function main(cmdline) {
     auto tree = BinaryTree(5);
     tree.insert(3);
     tree.insert(7);
