@@ -1,0 +1,15 @@
+function fibonacci(n) {
+    if (n.smaller(2)) {
+        return n;
+    }
+    return fibonacci(n.sub(1)).add(fibonacci(n.sub(2)));
+}
+
+function main() {
+    auto i = 0;
+    while (i.smaller(10)) {
+        print(fibonacci(i));
+        i = i.add(1);
+    }
+    return 0;
+}
