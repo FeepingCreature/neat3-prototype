@@ -303,6 +303,7 @@ static void print_helper(Value value) {
             printf("%ld", value.data.int_value);
             break;
         case TYPE_ARRAY:
+        {
             char* buffer = malloc(value.data.array.length);
             for (size_t i = 0; i < value.data.array.length; i++) {
                 buffer[i] = (char) value.data.array.elements[i].data.int_value;
@@ -310,6 +311,7 @@ static void print_helper(Value value) {
             printf("%.*s", (int) value.data.array.length, buffer);
             free(buffer);
             break;
+        }
         case TYPE_OBJECT:
             printf("<%s object>", value.data.object.class_type->name);
             break;
