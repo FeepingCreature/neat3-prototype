@@ -168,22 +168,17 @@ Value Program_compile(Module* mod, Value* this_ptr, Value* args, size_t arg_coun
     Value v1 = create_array((Value[]){}, 0);
 Value compiledNodes = v1;
 Value v2 = create_int(0);
-Value i = v2;
-while (1) {
-Value v3 = call_method(mod, &*object_get_field(*this_ptr, "nodes"), "length", (Value[]){}, 0);
-Value v4 = call_method(mod, &i, "smaller", (Value[]){v3}, 1);
-if (v4.data.int_value == 0) break;
-Value v5 = call_method(mod, &*object_get_field(*this_ptr, "nodes"), "get", (Value[]){i}, 1);
-Value v6 = call_method(mod, &v5, "compile", (Value[]){*this_ptr}, 1);
-Value v7 = call_method(mod, &compiledNodes, "push", (Value[]){v6}, 1);
-compiledNodes = v7;
-Value v8 = create_int(1);
-Value v9 = call_method(mod, &i, "add", (Value[]){v8}, 1);
-i = v9;
+Value v3 = call_method(mod, &*object_get_field(*this_ptr, "nodes"), "length", NULL, 0);
+while (v2.data.int_value < v3.data.int_value) {
+    Value node = call_method(mod, &*object_get_field(*this_ptr, "nodes"), "get", &v2, 1);
+Value v4 = call_method(mod, &node, "compile", (Value[]){*this_ptr}, 1);
+Value v5 = call_method(mod, &compiledNodes, "push", (Value[]){v4}, 1);
+compiledNodes = v5;
+    v2.data.int_value++;
 }
-Value v10 = create_array((Value[]){create_int(10)}, 1);
-Value v11 = call_method(mod, &compiledNodes, "join", (Value[]){v10}, 1);
-return v11;
+Value v6 = create_array((Value[]){create_int(10)}, 1);
+Value v7 = call_method(mod, &compiledNodes, "join", (Value[]){v6}, 1);
+return v7;
     return create_null();
 }
 
@@ -194,32 +189,27 @@ Value Program_findClass(Module* mod, Value* this_ptr, Value* args, size_t arg_co
     }
     Value* self = this_ptr->data.object.fields;
     Value name = args[0];    Value v1 = create_int(0);
-Value i = v1;
-while (1) {
-Value v2 = call_method(mod, &*object_get_field(*this_ptr, "nodes"), "length", (Value[]){}, 0);
-Value v3 = call_method(mod, &i, "smaller", (Value[]){v2}, 1);
-if (v3.data.int_value == 0) break;
-Value v4 = call_method(mod, &*object_get_field(*this_ptr, "nodes"), "get", (Value[]){i}, 1);
-Value v5 = instance_of(v4, "ClassDecl");
-Value classDecl = v5;
-Value v6 = call_method(mod, &classDecl, "isNull", (Value[]){}, 0);
-Value v7 = call_method(mod, &v6, "not", (Value[]){}, 0);
-Value v8 = create_int(0);
-if (v7.data.int_value != 0) {
-Value v9 = call_method(mod, &*object_get_field(classDecl, "name"), "equal", (Value[]){name}, 1);
-    if (v9.data.int_value != 0) {
-        v8 = create_int(1);
+Value v2 = call_method(mod, &*object_get_field(*this_ptr, "nodes"), "length", NULL, 0);
+while (v1.data.int_value < v2.data.int_value) {
+    Value node = call_method(mod, &*object_get_field(*this_ptr, "nodes"), "get", &v1, 1);
+Value v3 = instance_of(node, "ClassDecl");
+Value classDecl = v3;
+Value v4 = call_method(mod, &classDecl, "isNull", (Value[]){}, 0);
+Value v5 = call_method(mod, &v4, "not", (Value[]){}, 0);
+Value v6 = create_int(0);
+if (v5.data.int_value != 0) {
+Value v7 = call_method(mod, &*object_get_field(classDecl, "name"), "equal", (Value[]){name}, 1);
+    if (v7.data.int_value != 0) {
+        v6 = create_int(1);
     }
 }
-if (v8.data.int_value != 0) {
+if (v6.data.int_value != 0) {
 return classDecl;
 }
-Value v10 = create_int(1);
-Value v11 = call_method(mod, &i, "add", (Value[]){v10}, 1);
-i = v11;
+    v1.data.int_value++;
 }
-Value v12 = create_null();
-return v12;
+Value v8 = create_null();
+return v8;
     return create_null();
 }
 
@@ -265,65 +255,60 @@ Value bodyContext = v2;
 Value v3 = create_array((Value[]){}, 0);
 Value compiledBody = v3;
 Value v4 = create_int(0);
-Value i = v4;
-while (1) {
-Value v5 = call_method(mod, &*object_get_field(*this_ptr, "body"), "length", (Value[]){}, 0);
-Value v6 = call_method(mod, &i, "smaller", (Value[]){v5}, 1);
-if (v6.data.int_value == 0) break;
-Value v7 = call_method(mod, &*object_get_field(*this_ptr, "body"), "get", (Value[]){i}, 1);
-Value v8 = call_method(mod, &v7, "compile", (Value[]){bodyContext}, 1);
-Value v9 = call_method(mod, &compiledBody, "push", (Value[]){v8}, 1);
-compiledBody = v9;
-Value v10 = create_int(1);
-Value v11 = call_method(mod, &i, "add", (Value[]){v10}, 1);
-i = v11;
+Value v5 = call_method(mod, &*object_get_field(*this_ptr, "body"), "length", NULL, 0);
+while (v4.data.int_value < v5.data.int_value) {
+    Value stmt = call_method(mod, &*object_get_field(*this_ptr, "body"), "get", &v4, 1);
+Value v6 = call_method(mod, &stmt, "compile", (Value[]){bodyContext}, 1);
+Value v7 = call_method(mod, &compiledBody, "push", (Value[]){v6}, 1);
+compiledBody = v7;
+    v4.data.int_value++;
 }
-Value v12 = call_method(mod, &bodyContext, "getCurrentCode", (Value[]){}, 0);
-Value functionBody = v12;
+Value v8 = call_method(mod, &bodyContext, "getCurrentCode", (Value[]){}, 0);
+Value functionBody = v8;
 Value emittedName = *object_get_field(*this_ptr, "name");
-Value v13 = create_array((Value[]){create_int(109), create_int(97), create_int(105), create_int(110)}, 4);
-Value v14 = call_method(mod, &*object_get_field(*this_ptr, "name"), "equal", (Value[]){v13}, 1);
-if (v14.data.int_value != 0) {
-Value v15 = create_array((Value[]){create_int(109), create_int(97), create_int(105), create_int(110), create_int(50)}, 5);
-emittedName = v15;
+Value v9 = create_array((Value[]){create_int(109), create_int(97), create_int(105), create_int(110)}, 4);
+Value v10 = call_method(mod, &*object_get_field(*this_ptr, "name"), "equal", (Value[]){v9}, 1);
+if (v10.data.int_value != 0) {
+Value v11 = create_array((Value[]){create_int(109), create_int(97), create_int(105), create_int(110), create_int(50)}, 5);
+emittedName = v11;
 }
-Value v16 = create_array((Value[]){create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 6);
-Value v17 = call_method(mod, &v16, "concat", (Value[]){emittedName}, 1);
-Value v18 = create_array((Value[]){create_int(40), create_int(77), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(42), create_int(32), create_int(109), create_int(111), create_int(100), create_int(44), create_int(32), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(42), create_int(32), create_int(97), create_int(114), create_int(103), create_int(115), create_int(44), create_int(32), create_int(115), create_int(105), create_int(122), create_int(101), create_int(95), create_int(116), create_int(32), create_int(97), create_int(114), create_int(103), create_int(95), create_int(99), create_int(111), create_int(117), create_int(110), create_int(116), create_int(41), create_int(32), create_int(123), create_int(10)}, 47);
-Value v19 = call_method(mod, &v17, "concat", (Value[]){v18}, 1);
-Value v20 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(105), create_int(102), create_int(32), create_int(40), create_int(97), create_int(114), create_int(103), create_int(95), create_int(99), create_int(111), create_int(117), create_int(110), create_int(116), create_int(32), create_int(33), create_int(61), create_int(32)}, 21);
-Value v21 = call_method(mod, &v19, "concat", (Value[]){v20}, 1);
-Value v22 = call_method(mod, &*object_get_field(*this_ptr, "params"), "length", (Value[]){}, 0);
-Value v23 = call_method(mod, &v22, "toString", (Value[]){}, 0);
-Value v24 = call_method(mod, &v21, "concat", (Value[]){v23}, 1);
-Value v25 = create_array((Value[]){create_int(41), create_int(32), create_int(123), create_int(10)}, 4);
-Value v26 = call_method(mod, &v24, "concat", (Value[]){v25}, 1);
-Value v27 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(102), create_int(112), create_int(114), create_int(105), create_int(110), create_int(116), create_int(102), create_int(40), create_int(115), create_int(116), create_int(100), create_int(101), create_int(114), create_int(114), create_int(44), create_int(32), create_int(34)}, 25);
-Value v28 = call_method(mod, &v26, "concat", (Value[]){v27}, 1);
-Value v29 = call_method(mod, &v28, "concat", (Value[]){*object_get_field(*this_ptr, "name")}, 1);
-Value v30 = create_array((Value[]){create_int(32), create_int(101), create_int(120), create_int(112), create_int(101), create_int(99), create_int(116), create_int(115), create_int(32)}, 9);
-Value v31 = call_method(mod, &v29, "concat", (Value[]){v30}, 1);
-Value v32 = call_method(mod, &*object_get_field(*this_ptr, "params"), "length", (Value[]){}, 0);
-Value v33 = call_method(mod, &v32, "toString", (Value[]){}, 0);
-Value v34 = call_method(mod, &v31, "concat", (Value[]){v33}, 1);
-Value v35 = create_array((Value[]){create_int(32), create_int(97), create_int(114), create_int(103), create_int(117), create_int(109), create_int(101), create_int(110), create_int(116), create_int(40), create_int(115), create_int(41), create_int(92), create_int(110), create_int(34), create_int(41), create_int(59), create_int(10)}, 18);
+Value v12 = create_array((Value[]){create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 6);
+Value v13 = call_method(mod, &v12, "concat", (Value[]){emittedName}, 1);
+Value v14 = create_array((Value[]){create_int(40), create_int(77), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(42), create_int(32), create_int(109), create_int(111), create_int(100), create_int(44), create_int(32), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(42), create_int(32), create_int(97), create_int(114), create_int(103), create_int(115), create_int(44), create_int(32), create_int(115), create_int(105), create_int(122), create_int(101), create_int(95), create_int(116), create_int(32), create_int(97), create_int(114), create_int(103), create_int(95), create_int(99), create_int(111), create_int(117), create_int(110), create_int(116), create_int(41), create_int(32), create_int(123), create_int(10)}, 47);
+Value v15 = call_method(mod, &v13, "concat", (Value[]){v14}, 1);
+Value v16 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(105), create_int(102), create_int(32), create_int(40), create_int(97), create_int(114), create_int(103), create_int(95), create_int(99), create_int(111), create_int(117), create_int(110), create_int(116), create_int(32), create_int(33), create_int(61), create_int(32)}, 21);
+Value v17 = call_method(mod, &v15, "concat", (Value[]){v16}, 1);
+Value v18 = call_method(mod, &*object_get_field(*this_ptr, "params"), "length", (Value[]){}, 0);
+Value v19 = call_method(mod, &v18, "toString", (Value[]){}, 0);
+Value v20 = call_method(mod, &v17, "concat", (Value[]){v19}, 1);
+Value v21 = create_array((Value[]){create_int(41), create_int(32), create_int(123), create_int(10)}, 4);
+Value v22 = call_method(mod, &v20, "concat", (Value[]){v21}, 1);
+Value v23 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(102), create_int(112), create_int(114), create_int(105), create_int(110), create_int(116), create_int(102), create_int(40), create_int(115), create_int(116), create_int(100), create_int(101), create_int(114), create_int(114), create_int(44), create_int(32), create_int(34)}, 25);
+Value v24 = call_method(mod, &v22, "concat", (Value[]){v23}, 1);
+Value v25 = call_method(mod, &v24, "concat", (Value[]){*object_get_field(*this_ptr, "name")}, 1);
+Value v26 = create_array((Value[]){create_int(32), create_int(101), create_int(120), create_int(112), create_int(101), create_int(99), create_int(116), create_int(115), create_int(32)}, 9);
+Value v27 = call_method(mod, &v25, "concat", (Value[]){v26}, 1);
+Value v28 = call_method(mod, &*object_get_field(*this_ptr, "params"), "length", (Value[]){}, 0);
+Value v29 = call_method(mod, &v28, "toString", (Value[]){}, 0);
+Value v30 = call_method(mod, &v27, "concat", (Value[]){v29}, 1);
+Value v31 = create_array((Value[]){create_int(32), create_int(97), create_int(114), create_int(103), create_int(117), create_int(109), create_int(101), create_int(110), create_int(116), create_int(40), create_int(115), create_int(41), create_int(92), create_int(110), create_int(34), create_int(41), create_int(59), create_int(10)}, 18);
+Value v32 = call_method(mod, &v30, "concat", (Value[]){v31}, 1);
+Value v33 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(101), create_int(120), create_int(105), create_int(116), create_int(40), create_int(49), create_int(41), create_int(59), create_int(10)}, 17);
+Value v34 = call_method(mod, &v32, "concat", (Value[]){v33}, 1);
+Value v35 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(125), create_int(10)}, 6);
 Value v36 = call_method(mod, &v34, "concat", (Value[]){v35}, 1);
-Value v37 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(101), create_int(120), create_int(105), create_int(116), create_int(40), create_int(49), create_int(41), create_int(59), create_int(10)}, 17);
+Value v37 = call_method(mod, &*this_ptr, "compileParamAssignments", (Value[]){}, 0);
 Value v38 = call_method(mod, &v36, "concat", (Value[]){v37}, 1);
-Value v39 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(125), create_int(10)}, 6);
+Value v39 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32)}, 4);
 Value v40 = call_method(mod, &v38, "concat", (Value[]){v39}, 1);
-Value v41 = call_method(mod, &*this_ptr, "compileParamAssignments", (Value[]){}, 0);
-Value v42 = call_method(mod, &v40, "concat", (Value[]){v41}, 1);
-Value v43 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32)}, 4);
-Value v44 = call_method(mod, &v42, "concat", (Value[]){v43}, 1);
-Value v45 = call_method(mod, &v44, "concat", (Value[]){functionBody}, 1);
-Value v46 = create_array((Value[]){create_int(10)}, 1);
+Value v41 = call_method(mod, &v40, "concat", (Value[]){functionBody}, 1);
+Value v42 = create_array((Value[]){create_int(10)}, 1);
+Value v43 = call_method(mod, &v41, "concat", (Value[]){v42}, 1);
+Value v44 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(114), create_int(101), create_int(116), create_int(117), create_int(114), create_int(110), create_int(32), create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(110), create_int(117), create_int(108), create_int(108), create_int(40), create_int(41), create_int(59), create_int(10)}, 26);
+Value v45 = call_method(mod, &v43, "concat", (Value[]){v44}, 1);
+Value v46 = create_array((Value[]){create_int(125), create_int(10)}, 2);
 Value v47 = call_method(mod, &v45, "concat", (Value[]){v46}, 1);
-Value v48 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(114), create_int(101), create_int(116), create_int(117), create_int(114), create_int(110), create_int(32), create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(110), create_int(117), create_int(108), create_int(108), create_int(40), create_int(41), create_int(59), create_int(10)}, 26);
-Value v49 = call_method(mod, &v47, "concat", (Value[]){v48}, 1);
-Value v50 = create_array((Value[]){create_int(125), create_int(10)}, 2);
-Value v51 = call_method(mod, &v49, "concat", (Value[]){v50}, 1);
-return v51;
+return v47;
     return create_null();
 }
 
@@ -337,28 +322,28 @@ Value FunctionDecl_compileParamAssignments(Module* mod, Value* this_ptr, Value* 
 Value assignments = v1;
 Value v2 = create_int(0);
 Value i = v2;
-while (1) {
-Value v3 = call_method(mod, &*object_get_field(*this_ptr, "params"), "length", (Value[]){}, 0);
-Value v4 = call_method(mod, &i, "smaller", (Value[]){v3}, 1);
-if (v4.data.int_value == 0) break;
+Value v3 = create_int(0);
+Value v4 = call_method(mod, &*object_get_field(*this_ptr, "params"), "length", NULL, 0);
+while (v3.data.int_value < v4.data.int_value) {
+    Value param = call_method(mod, &*object_get_field(*this_ptr, "params"), "get", &v3, 1);
 Value v5 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 10);
-Value v6 = call_method(mod, &*object_get_field(*this_ptr, "params"), "get", (Value[]){i}, 1);
-Value v7 = call_method(mod, &v5, "concat", (Value[]){v6}, 1);
-Value v8 = create_array((Value[]){create_int(32), create_int(61), create_int(32), create_int(97), create_int(114), create_int(103), create_int(115), create_int(91)}, 8);
-Value v9 = call_method(mod, &v7, "concat", (Value[]){v8}, 1);
-Value v10 = call_method(mod, &i, "toString", (Value[]){}, 0);
-Value v11 = call_method(mod, &v9, "concat", (Value[]){v10}, 1);
-Value v12 = create_array((Value[]){create_int(93), create_int(59)}, 2);
-Value v13 = call_method(mod, &v11, "concat", (Value[]){v12}, 1);
-Value v14 = call_method(mod, &assignments, "push", (Value[]){v13}, 1);
-assignments = v14;
-Value v15 = create_int(1);
-Value v16 = call_method(mod, &i, "add", (Value[]){v15}, 1);
-i = v16;
+Value v6 = call_method(mod, &v5, "concat", (Value[]){param}, 1);
+Value v7 = create_array((Value[]){create_int(32), create_int(61), create_int(32), create_int(97), create_int(114), create_int(103), create_int(115), create_int(91)}, 8);
+Value v8 = call_method(mod, &v6, "concat", (Value[]){v7}, 1);
+Value v9 = call_method(mod, &i, "toString", (Value[]){}, 0);
+Value v10 = call_method(mod, &v8, "concat", (Value[]){v9}, 1);
+Value v11 = create_array((Value[]){create_int(93), create_int(59)}, 2);
+Value v12 = call_method(mod, &v10, "concat", (Value[]){v11}, 1);
+Value v13 = call_method(mod, &assignments, "push", (Value[]){v12}, 1);
+assignments = v13;
+Value v14 = create_int(1);
+Value v15 = call_method(mod, &i, "add", (Value[]){v14}, 1);
+i = v15;
+    v3.data.int_value++;
 }
-Value v17 = create_array((Value[]){create_int(10)}, 1);
-Value v18 = call_method(mod, &assignments, "join", (Value[]){v17}, 1);
-return v18;
+Value v16 = create_array((Value[]){create_int(10)}, 1);
+Value v17 = call_method(mod, &assignments, "join", (Value[]){v16}, 1);
+return v17;
     return create_null();
 }
 
@@ -417,28 +402,22 @@ Value VTable_addEntry(Module* mod, Value* this_ptr, Value* args, size_t arg_coun
     Value* self = this_ptr->data.object.fields;
     Value name = args[0];
     Value function_ = args[1];    Value v1 = create_int(0);
-Value i = v1;
-while (1) {
-Value v2 = call_method(mod, &*object_get_field(*this_ptr, "entries"), "length", (Value[]){}, 0);
-Value v3 = call_method(mod, &i, "smaller", (Value[]){v2}, 1);
-if (v3.data.int_value == 0) break;
-Value v4 = call_method(mod, &*object_get_field(*this_ptr, "entries"), "get", (Value[]){i}, 1);
-Value v5 = call_method(mod, &*object_get_field(v4, "name"), "equal", (Value[]){name}, 1);
-if (v5.data.int_value != 0) {
-Value v6 = call_method(mod, &*object_get_field(*this_ptr, "entries"), "get", (Value[]){i}, 1);
-object_set_field(&v6, "function", function_);
+Value v2 = call_method(mod, &*object_get_field(*this_ptr, "entries"), "length", NULL, 0);
+while (v1.data.int_value < v2.data.int_value) {
+    Value entry = call_method(mod, &*object_get_field(*this_ptr, "entries"), "get", &v1, 1);
+Value v3 = call_method(mod, &*object_get_field(entry, "name"), "equal", (Value[]){name}, 1);
+if (v3.data.int_value != 0) {
+object_set_field(&entry, "function", function_);
+Value v4 = create_int(0);
+return v4;
+}
+    v1.data.int_value++;
+}
+Value v5 = module_call(mod, "VTableEntry", (Value[]){name, function_}, 2);
+Value v6 = call_method(mod, &*object_get_field(*this_ptr, "entries"), "push", (Value[]){v5}, 1);
+object_set_field(&*this_ptr, "entries", v6);
 Value v7 = create_int(0);
 return v7;
-}
-Value v8 = create_int(1);
-Value v9 = call_method(mod, &i, "add", (Value[]){v8}, 1);
-i = v9;
-}
-Value v10 = module_call(mod, "VTableEntry", (Value[]){name, function_}, 2);
-Value v11 = call_method(mod, &*object_get_field(*this_ptr, "entries"), "push", (Value[]){v10}, 1);
-object_set_field(&*this_ptr, "entries", v11);
-Value v12 = create_int(0);
-return v12;
     return create_null();
 }
 
@@ -483,26 +462,21 @@ Value ClassDecl_compile(Module* mod, Value* this_ptr, Value* args, size_t arg_co
     Value prog = args[0];    Value v1 = create_array((Value[]){}, 0);
 Value compiledMethods = v1;
 Value v2 = create_int(0);
-Value i = v2;
-while (1) {
-Value v3 = call_method(mod, &*object_get_field(*this_ptr, "methods"), "length", (Value[]){}, 0);
-Value v4 = call_method(mod, &i, "smaller", (Value[]){v3}, 1);
-if (v4.data.int_value == 0) break;
-Value v5 = call_method(mod, &*object_get_field(*this_ptr, "methods"), "get", (Value[]){i}, 1);
-Value v6 = call_method(mod, &*this_ptr, "compileMethod", (Value[]){v5}, 1);
-Value v7 = call_method(mod, &compiledMethods, "push", (Value[]){v6}, 1);
-compiledMethods = v7;
-Value v8 = create_int(1);
-Value v9 = call_method(mod, &i, "add", (Value[]){v8}, 1);
-i = v9;
+Value v3 = call_method(mod, &*object_get_field(*this_ptr, "methods"), "length", NULL, 0);
+while (v2.data.int_value < v3.data.int_value) {
+    Value method = call_method(mod, &*object_get_field(*this_ptr, "methods"), "get", &v2, 1);
+Value v4 = call_method(mod, &*this_ptr, "compileMethod", (Value[]){method}, 1);
+Value v5 = call_method(mod, &compiledMethods, "push", (Value[]){v4}, 1);
+compiledMethods = v5;
+    v2.data.int_value++;
 }
-Value v10 = create_array((Value[]){create_int(10)}, 1);
-Value v11 = call_method(mod, &compiledMethods, "join", (Value[]){v10}, 1);
-Value v12 = create_array((Value[]){create_int(10)}, 1);
-Value v13 = call_method(mod, &v11, "concat", (Value[]){v12}, 1);
-Value v14 = call_method(mod, &*this_ptr, "compileClassTypeInitializer", (Value[]){prog}, 1);
-Value v15 = call_method(mod, &v13, "concat", (Value[]){v14}, 1);
-return v15;
+Value v6 = create_array((Value[]){create_int(10)}, 1);
+Value v7 = call_method(mod, &compiledMethods, "join", (Value[]){v6}, 1);
+Value v8 = create_array((Value[]){create_int(10)}, 1);
+Value v9 = call_method(mod, &v7, "concat", (Value[]){v8}, 1);
+Value v10 = call_method(mod, &*this_ptr, "compileClassTypeInitializer", (Value[]){prog}, 1);
+Value v11 = call_method(mod, &v9, "concat", (Value[]){v10}, 1);
+return v11;
     return create_null();
 }
 
@@ -527,21 +501,15 @@ Value v6 = call_method(mod, &parentClass, "buildVTable", (Value[]){prog}, 1);
 vtable = v6;
 }
 Value v7 = create_int(0);
-Value i = v7;
-while (1) {
-Value v8 = call_method(mod, &*object_get_field(*this_ptr, "methods"), "length", (Value[]){}, 0);
-Value v9 = call_method(mod, &i, "smaller", (Value[]){v8}, 1);
-if (v9.data.int_value == 0) break;
-Value v10 = call_method(mod, &*object_get_field(*this_ptr, "methods"), "get", (Value[]){i}, 1);
-Value method = v10;
-Value v11 = create_array((Value[]){create_int(95)}, 1);
-Value v12 = call_method(mod, &*object_get_field(*this_ptr, "name"), "concat", (Value[]){v11}, 1);
-Value v13 = call_method(mod, &v12, "concat", (Value[]){*object_get_field(method, "name")}, 1);
-Value v14 = call_method(mod, &vtable, "addEntry", (Value[]){*object_get_field(method, "name"), v13}, 2);
-v14;
-Value v15 = create_int(1);
-Value v16 = call_method(mod, &i, "add", (Value[]){v15}, 1);
-i = v16;
+Value v8 = call_method(mod, &*object_get_field(*this_ptr, "methods"), "length", NULL, 0);
+while (v7.data.int_value < v8.data.int_value) {
+    Value method = call_method(mod, &*object_get_field(*this_ptr, "methods"), "get", &v7, 1);
+Value v9 = create_array((Value[]){create_int(95)}, 1);
+Value v10 = call_method(mod, &*object_get_field(*this_ptr, "name"), "concat", (Value[]){v9}, 1);
+Value v11 = call_method(mod, &v10, "concat", (Value[]){*object_get_field(method, "name")}, 1);
+Value v12 = call_method(mod, &vtable, "addEntry", (Value[]){*object_get_field(method, "name"), v11}, 2);
+v12;
+    v7.data.int_value++;
 }
 return vtable;
     return create_null();
@@ -559,63 +527,58 @@ Value context = v2;
 Value v3 = create_array((Value[]){}, 0);
 Value compiledBody = v3;
 Value v4 = create_int(0);
-Value i = v4;
-while (1) {
-Value v5 = call_method(mod, &*object_get_field(method, "body"), "length", (Value[]){}, 0);
-Value v6 = call_method(mod, &i, "smaller", (Value[]){v5}, 1);
-if (v6.data.int_value == 0) break;
-Value v7 = call_method(mod, &*object_get_field(method, "body"), "get", (Value[]){i}, 1);
-Value v8 = call_method(mod, &v7, "compile", (Value[]){context}, 1);
-Value v9 = call_method(mod, &compiledBody, "push", (Value[]){v8}, 1);
-compiledBody = v9;
-Value v10 = create_int(1);
-Value v11 = call_method(mod, &i, "add", (Value[]){v10}, 1);
-i = v11;
+Value v5 = call_method(mod, &*object_get_field(method, "body"), "length", NULL, 0);
+while (v4.data.int_value < v5.data.int_value) {
+    Value stmt = call_method(mod, &*object_get_field(method, "body"), "get", &v4, 1);
+Value v6 = call_method(mod, &stmt, "compile", (Value[]){context}, 1);
+Value v7 = call_method(mod, &compiledBody, "push", (Value[]){v6}, 1);
+compiledBody = v7;
+    v4.data.int_value++;
 }
-Value v12 = call_method(mod, &context, "getCurrentCode", (Value[]){}, 0);
-Value functionBody = v12;
-Value v13 = call_method(mod, &*object_get_field(method, "params"), "length", (Value[]){}, 0);
-Value argCount = v13;
-Value v14 = create_array((Value[]){create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 6);
-Value v15 = call_method(mod, &v14, "concat", (Value[]){*object_get_field(*this_ptr, "name")}, 1);
-Value v16 = create_array((Value[]){create_int(95)}, 1);
-Value v17 = call_method(mod, &v15, "concat", (Value[]){v16}, 1);
-Value v18 = call_method(mod, &v17, "concat", (Value[]){*object_get_field(method, "name")}, 1);
-Value v19 = create_array((Value[]){create_int(40), create_int(77), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(42), create_int(32), create_int(109), create_int(111), create_int(100), create_int(44), create_int(32), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(42), create_int(32), create_int(116), create_int(104), create_int(105), create_int(115), create_int(95), create_int(112), create_int(116), create_int(114), create_int(44), create_int(32), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(42), create_int(32), create_int(97), create_int(114), create_int(103), create_int(115), create_int(44), create_int(32), create_int(115), create_int(105), create_int(122), create_int(101), create_int(95), create_int(116), create_int(32), create_int(97), create_int(114), create_int(103), create_int(95), create_int(99), create_int(111), create_int(117), create_int(110), create_int(116), create_int(41), create_int(32), create_int(123), create_int(10)}, 64);
+Value v8 = call_method(mod, &context, "getCurrentCode", (Value[]){}, 0);
+Value functionBody = v8;
+Value v9 = call_method(mod, &*object_get_field(method, "params"), "length", (Value[]){}, 0);
+Value argCount = v9;
+Value v10 = create_array((Value[]){create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 6);
+Value v11 = call_method(mod, &v10, "concat", (Value[]){*object_get_field(*this_ptr, "name")}, 1);
+Value v12 = create_array((Value[]){create_int(95)}, 1);
+Value v13 = call_method(mod, &v11, "concat", (Value[]){v12}, 1);
+Value v14 = call_method(mod, &v13, "concat", (Value[]){*object_get_field(method, "name")}, 1);
+Value v15 = create_array((Value[]){create_int(40), create_int(77), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(42), create_int(32), create_int(109), create_int(111), create_int(100), create_int(44), create_int(32), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(42), create_int(32), create_int(116), create_int(104), create_int(105), create_int(115), create_int(95), create_int(112), create_int(116), create_int(114), create_int(44), create_int(32), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(42), create_int(32), create_int(97), create_int(114), create_int(103), create_int(115), create_int(44), create_int(32), create_int(115), create_int(105), create_int(122), create_int(101), create_int(95), create_int(116), create_int(32), create_int(97), create_int(114), create_int(103), create_int(95), create_int(99), create_int(111), create_int(117), create_int(110), create_int(116), create_int(41), create_int(32), create_int(123), create_int(10)}, 64);
+Value v16 = call_method(mod, &v14, "concat", (Value[]){v15}, 1);
+Value v17 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(105), create_int(102), create_int(32), create_int(40), create_int(97), create_int(114), create_int(103), create_int(95), create_int(99), create_int(111), create_int(117), create_int(110), create_int(116), create_int(32), create_int(33), create_int(61), create_int(32)}, 21);
+Value v18 = call_method(mod, &v16, "concat", (Value[]){v17}, 1);
+Value v19 = call_method(mod, &argCount, "toString", (Value[]){}, 0);
 Value v20 = call_method(mod, &v18, "concat", (Value[]){v19}, 1);
-Value v21 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(105), create_int(102), create_int(32), create_int(40), create_int(97), create_int(114), create_int(103), create_int(95), create_int(99), create_int(111), create_int(117), create_int(110), create_int(116), create_int(32), create_int(33), create_int(61), create_int(32)}, 21);
+Value v21 = create_array((Value[]){create_int(41), create_int(32), create_int(123), create_int(10)}, 4);
 Value v22 = call_method(mod, &v20, "concat", (Value[]){v21}, 1);
-Value v23 = call_method(mod, &argCount, "toString", (Value[]){}, 0);
+Value v23 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(102), create_int(112), create_int(114), create_int(105), create_int(110), create_int(116), create_int(102), create_int(40), create_int(115), create_int(116), create_int(100), create_int(101), create_int(114), create_int(114), create_int(44), create_int(32), create_int(34)}, 25);
 Value v24 = call_method(mod, &v22, "concat", (Value[]){v23}, 1);
-Value v25 = create_array((Value[]){create_int(41), create_int(32), create_int(123), create_int(10)}, 4);
-Value v26 = call_method(mod, &v24, "concat", (Value[]){v25}, 1);
-Value v27 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(102), create_int(112), create_int(114), create_int(105), create_int(110), create_int(116), create_int(102), create_int(40), create_int(115), create_int(116), create_int(100), create_int(101), create_int(114), create_int(114), create_int(44), create_int(32), create_int(34)}, 25);
-Value v28 = call_method(mod, &v26, "concat", (Value[]){v27}, 1);
-Value v29 = call_method(mod, &v28, "concat", (Value[]){*object_get_field(method, "name")}, 1);
-Value v30 = create_array((Value[]){create_int(32), create_int(101), create_int(120), create_int(112), create_int(101), create_int(99), create_int(116), create_int(115), create_int(32)}, 9);
+Value v25 = call_method(mod, &v24, "concat", (Value[]){*object_get_field(method, "name")}, 1);
+Value v26 = create_array((Value[]){create_int(32), create_int(101), create_int(120), create_int(112), create_int(101), create_int(99), create_int(116), create_int(115), create_int(32)}, 9);
+Value v27 = call_method(mod, &v25, "concat", (Value[]){v26}, 1);
+Value v28 = call_method(mod, &argCount, "toString", (Value[]){}, 0);
+Value v29 = call_method(mod, &v27, "concat", (Value[]){v28}, 1);
+Value v30 = create_array((Value[]){create_int(32), create_int(97), create_int(114), create_int(103), create_int(117), create_int(109), create_int(101), create_int(110), create_int(116), create_int(40), create_int(115), create_int(41), create_int(92), create_int(110), create_int(34), create_int(41), create_int(59), create_int(10)}, 18);
 Value v31 = call_method(mod, &v29, "concat", (Value[]){v30}, 1);
-Value v32 = call_method(mod, &argCount, "toString", (Value[]){}, 0);
+Value v32 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(101), create_int(120), create_int(105), create_int(116), create_int(40), create_int(49), create_int(41), create_int(59), create_int(10)}, 17);
 Value v33 = call_method(mod, &v31, "concat", (Value[]){v32}, 1);
-Value v34 = create_array((Value[]){create_int(32), create_int(97), create_int(114), create_int(103), create_int(117), create_int(109), create_int(101), create_int(110), create_int(116), create_int(40), create_int(115), create_int(41), create_int(92), create_int(110), create_int(34), create_int(41), create_int(59), create_int(10)}, 18);
+Value v34 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(125), create_int(10)}, 6);
 Value v35 = call_method(mod, &v33, "concat", (Value[]){v34}, 1);
-Value v36 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(101), create_int(120), create_int(105), create_int(116), create_int(40), create_int(49), create_int(41), create_int(59), create_int(10)}, 17);
+Value v36 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(42), create_int(32), create_int(115), create_int(101), create_int(108), create_int(102), create_int(32), create_int(61), create_int(32), create_int(116), create_int(104), create_int(105), create_int(115), create_int(95), create_int(112), create_int(116), create_int(114), create_int(45), create_int(62), create_int(100), create_int(97), create_int(116), create_int(97), create_int(46), create_int(111), create_int(98), create_int(106), create_int(101), create_int(99), create_int(116), create_int(46), create_int(102), create_int(105), create_int(101), create_int(108), create_int(100), create_int(115), create_int(59), create_int(10)}, 48);
 Value v37 = call_method(mod, &v35, "concat", (Value[]){v36}, 1);
-Value v38 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(125), create_int(10)}, 6);
+Value v38 = call_method(mod, &*this_ptr, "compileMethodParamAssignments", (Value[]){method}, 1);
 Value v39 = call_method(mod, &v37, "concat", (Value[]){v38}, 1);
-Value v40 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(42), create_int(32), create_int(115), create_int(101), create_int(108), create_int(102), create_int(32), create_int(61), create_int(32), create_int(116), create_int(104), create_int(105), create_int(115), create_int(95), create_int(112), create_int(116), create_int(114), create_int(45), create_int(62), create_int(100), create_int(97), create_int(116), create_int(97), create_int(46), create_int(111), create_int(98), create_int(106), create_int(101), create_int(99), create_int(116), create_int(46), create_int(102), create_int(105), create_int(101), create_int(108), create_int(100), create_int(115), create_int(59), create_int(10)}, 48);
+Value v40 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32)}, 4);
 Value v41 = call_method(mod, &v39, "concat", (Value[]){v40}, 1);
-Value v42 = call_method(mod, &*this_ptr, "compileMethodParamAssignments", (Value[]){method}, 1);
-Value v43 = call_method(mod, &v41, "concat", (Value[]){v42}, 1);
-Value v44 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32)}, 4);
-Value v45 = call_method(mod, &v43, "concat", (Value[]){v44}, 1);
-Value v46 = call_method(mod, &v45, "concat", (Value[]){functionBody}, 1);
-Value v47 = create_array((Value[]){create_int(10)}, 1);
+Value v42 = call_method(mod, &v41, "concat", (Value[]){functionBody}, 1);
+Value v43 = create_array((Value[]){create_int(10)}, 1);
+Value v44 = call_method(mod, &v42, "concat", (Value[]){v43}, 1);
+Value v45 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(114), create_int(101), create_int(116), create_int(117), create_int(114), create_int(110), create_int(32), create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(110), create_int(117), create_int(108), create_int(108), create_int(40), create_int(41), create_int(59), create_int(10)}, 26);
+Value v46 = call_method(mod, &v44, "concat", (Value[]){v45}, 1);
+Value v47 = create_array((Value[]){create_int(125), create_int(10)}, 2);
 Value v48 = call_method(mod, &v46, "concat", (Value[]){v47}, 1);
-Value v49 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(114), create_int(101), create_int(116), create_int(117), create_int(114), create_int(110), create_int(32), create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(110), create_int(117), create_int(108), create_int(108), create_int(40), create_int(41), create_int(59), create_int(10)}, 26);
-Value v50 = call_method(mod, &v48, "concat", (Value[]){v49}, 1);
-Value v51 = create_array((Value[]){create_int(125), create_int(10)}, 2);
-Value v52 = call_method(mod, &v50, "concat", (Value[]){v51}, 1);
-return v52;
+return v48;
     return create_null();
 }
 
@@ -629,28 +592,28 @@ Value ClassDecl_compileMethodParamAssignments(Module* mod, Value* this_ptr, Valu
 Value assignments = v1;
 Value v2 = create_int(0);
 Value i = v2;
-while (1) {
-Value v3 = call_method(mod, &*object_get_field(method, "params"), "length", (Value[]){}, 0);
-Value v4 = call_method(mod, &i, "smaller", (Value[]){v3}, 1);
-if (v4.data.int_value == 0) break;
+Value v3 = create_int(0);
+Value v4 = call_method(mod, &*object_get_field(method, "params"), "length", NULL, 0);
+while (v3.data.int_value < v4.data.int_value) {
+    Value param = call_method(mod, &*object_get_field(method, "params"), "get", &v3, 1);
 Value v5 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 10);
-Value v6 = call_method(mod, &*object_get_field(method, "params"), "get", (Value[]){i}, 1);
-Value v7 = call_method(mod, &v5, "concat", (Value[]){v6}, 1);
-Value v8 = create_array((Value[]){create_int(32), create_int(61), create_int(32), create_int(97), create_int(114), create_int(103), create_int(115), create_int(91)}, 8);
-Value v9 = call_method(mod, &v7, "concat", (Value[]){v8}, 1);
-Value v10 = call_method(mod, &i, "toString", (Value[]){}, 0);
-Value v11 = call_method(mod, &v9, "concat", (Value[]){v10}, 1);
-Value v12 = create_array((Value[]){create_int(93), create_int(59)}, 2);
-Value v13 = call_method(mod, &v11, "concat", (Value[]){v12}, 1);
-Value v14 = call_method(mod, &assignments, "push", (Value[]){v13}, 1);
-assignments = v14;
-Value v15 = create_int(1);
-Value v16 = call_method(mod, &i, "add", (Value[]){v15}, 1);
-i = v16;
+Value v6 = call_method(mod, &v5, "concat", (Value[]){param}, 1);
+Value v7 = create_array((Value[]){create_int(32), create_int(61), create_int(32), create_int(97), create_int(114), create_int(103), create_int(115), create_int(91)}, 8);
+Value v8 = call_method(mod, &v6, "concat", (Value[]){v7}, 1);
+Value v9 = call_method(mod, &i, "toString", (Value[]){}, 0);
+Value v10 = call_method(mod, &v8, "concat", (Value[]){v9}, 1);
+Value v11 = create_array((Value[]){create_int(93), create_int(59)}, 2);
+Value v12 = call_method(mod, &v10, "concat", (Value[]){v11}, 1);
+Value v13 = call_method(mod, &assignments, "push", (Value[]){v12}, 1);
+assignments = v13;
+Value v14 = create_int(1);
+Value v15 = call_method(mod, &i, "add", (Value[]){v14}, 1);
+i = v15;
+    v3.data.int_value++;
 }
-Value v17 = create_array((Value[]){create_int(10)}, 1);
-Value v18 = call_method(mod, &assignments, "join", (Value[]){v17}, 1);
-return v18;
+Value v16 = create_array((Value[]){create_int(10)}, 1);
+Value v17 = call_method(mod, &assignments, "join", (Value[]){v16}, 1);
+return v17;
     return create_null();
 }
 
@@ -668,130 +631,119 @@ Value v2 = call_method(mod, &current, "isNull", (Value[]){}, 0);
 Value v3 = call_method(mod, &v2, "not", (Value[]){}, 0);
 if (v3.data.int_value == 0) break;
 Value v4 = create_int(0);
-Value i = v4;
-while (1) {
-Value v5 = call_method(mod, &*object_get_field(current, "fields"), "length", (Value[]){}, 0);
-Value v6 = call_method(mod, &i, "smaller", (Value[]){v5}, 1);
-if (v6.data.int_value == 0) break;
-Value v7 = create_array((Value[]){create_int(34)}, 1);
-Value v8 = call_method(mod, &*object_get_field(current, "fields"), "get", (Value[]){i}, 1);
+Value v5 = call_method(mod, &*object_get_field(current, "fields"), "length", NULL, 0);
+while (v4.data.int_value < v5.data.int_value) {
+    Value field = call_method(mod, &*object_get_field(current, "fields"), "get", &v4, 1);
+Value v6 = create_array((Value[]){create_int(34)}, 1);
+Value v7 = call_method(mod, &v6, "concat", (Value[]){field}, 1);
+Value v8 = create_array((Value[]){create_int(34)}, 1);
 Value v9 = call_method(mod, &v7, "concat", (Value[]){v8}, 1);
-Value v10 = create_array((Value[]){create_int(34)}, 1);
-Value v11 = call_method(mod, &v9, "concat", (Value[]){v10}, 1);
-Value v12 = call_method(mod, &fieldNameInitializers, "push", (Value[]){v11}, 1);
-fieldNameInitializers = v12;
-Value v13 = create_int(1);
-Value v14 = call_method(mod, &i, "add", (Value[]){v13}, 1);
-i = v14;
+Value v10 = call_method(mod, &fieldNameInitializers, "push", (Value[]){v9}, 1);
+fieldNameInitializers = v10;
+    v4.data.int_value++;
 }
-Value v15 = create_array((Value[]){}, 0);
-Value v16 = call_method(mod, &*object_get_field(current, "parent"), "equal", (Value[]){v15}, 1);
-if (v16.data.int_value != 0) {
-Value v17 = create_null();
-current = v17;
+Value v11 = create_array((Value[]){}, 0);
+Value v12 = call_method(mod, &*object_get_field(current, "parent"), "equal", (Value[]){v11}, 1);
+if (v12.data.int_value != 0) {
+Value v13 = create_null();
+current = v13;
 }
 else {
-Value v18 = call_method(mod, &prog, "findClass", (Value[]){*object_get_field(current, "parent")}, 1);
-current = v18;
+Value v14 = call_method(mod, &prog, "findClass", (Value[]){*object_get_field(current, "parent")}, 1);
+current = v14;
 }
 }
-Value v19 = call_method(mod, &*this_ptr, "buildVTable", (Value[]){prog}, 1);
-Value vtable = v19;
-Value v20 = create_array((Value[]){}, 0);
-Value methodNameInitializers = v20;
-Value v21 = create_array((Value[]){}, 0);
-Value methodFuncInitializers = v21;
-Value v22 = create_int(0);
-Value i = v22;
-while (1) {
-Value v23 = call_method(mod, &*object_get_field(vtable, "entries"), "length", (Value[]){}, 0);
-Value v24 = call_method(mod, &i, "smaller", (Value[]){v23}, 1);
-if (v24.data.int_value == 0) break;
-Value v25 = call_method(mod, &*object_get_field(vtable, "entries"), "get", (Value[]){i}, 1);
-Value entry = v25;
-Value v26 = create_array((Value[]){create_int(34)}, 1);
-Value v27 = call_method(mod, &v26, "concat", (Value[]){*object_get_field(entry, "name")}, 1);
-Value v28 = create_array((Value[]){create_int(34)}, 1);
-Value v29 = call_method(mod, &v27, "concat", (Value[]){v28}, 1);
-Value v30 = call_method(mod, &methodNameInitializers, "push", (Value[]){v29}, 1);
-methodNameInitializers = v30;
-Value v31 = call_method(mod, &methodFuncInitializers, "push", (Value[]){*object_get_field(entry, "function")}, 1);
-methodFuncInitializers = v31;
-Value v32 = create_int(1);
-Value v33 = call_method(mod, &i, "add", (Value[]){v32}, 1);
-i = v33;
+Value v15 = call_method(mod, &*this_ptr, "buildVTable", (Value[]){prog}, 1);
+Value vtable = v15;
+Value v16 = create_array((Value[]){}, 0);
+Value methodNameInitializers = v16;
+Value v17 = create_array((Value[]){}, 0);
+Value methodFuncInitializers = v17;
+Value v18 = create_int(0);
+Value v19 = call_method(mod, &*object_get_field(vtable, "entries"), "length", NULL, 0);
+while (v18.data.int_value < v19.data.int_value) {
+    Value entry = call_method(mod, &*object_get_field(vtable, "entries"), "get", &v18, 1);
+Value v20 = create_array((Value[]){create_int(34)}, 1);
+Value v21 = call_method(mod, &v20, "concat", (Value[]){*object_get_field(entry, "name")}, 1);
+Value v22 = create_array((Value[]){create_int(34)}, 1);
+Value v23 = call_method(mod, &v21, "concat", (Value[]){v22}, 1);
+Value v24 = call_method(mod, &methodNameInitializers, "push", (Value[]){v23}, 1);
+methodNameInitializers = v24;
+Value v25 = call_method(mod, &methodFuncInitializers, "push", (Value[]){*object_get_field(entry, "function")}, 1);
+methodFuncInitializers = v25;
+    v18.data.int_value++;
 }
-Value v34 = create_array((Value[]){}, 0);
-Value parentStr = v34;
-Value v35 = create_array((Value[]){}, 0);
-Value v36 = call_method(mod, &*object_get_field(*this_ptr, "parent"), "equal", (Value[]){v35}, 1);
-if (v36.data.int_value != 0) {
-Value v37 = create_array((Value[]){create_int(78), create_int(85), create_int(76), create_int(76)}, 4);
-parentStr = v37;
+Value v26 = create_array((Value[]){}, 0);
+Value parentStr = v26;
+Value v27 = create_array((Value[]){}, 0);
+Value v28 = call_method(mod, &*object_get_field(*this_ptr, "parent"), "equal", (Value[]){v27}, 1);
+if (v28.data.int_value != 0) {
+Value v29 = create_array((Value[]){create_int(78), create_int(85), create_int(76), create_int(76)}, 4);
+parentStr = v29;
 }
 else {
-Value v38 = create_array((Value[]){create_int(38)}, 1);
-Value v39 = call_method(mod, &v38, "concat", (Value[]){*object_get_field(*this_ptr, "parent")}, 1);
-Value v40 = create_array((Value[]){create_int(95), create_int(116), create_int(121), create_int(112), create_int(101)}, 5);
+Value v30 = create_array((Value[]){create_int(38)}, 1);
+Value v31 = call_method(mod, &v30, "concat", (Value[]){*object_get_field(*this_ptr, "parent")}, 1);
+Value v32 = create_array((Value[]){create_int(95), create_int(116), create_int(121), create_int(112), create_int(101)}, 5);
+Value v33 = call_method(mod, &v31, "concat", (Value[]){v32}, 1);
+parentStr = v33;
+}
+Value v34 = create_array((Value[]){create_int(67), create_int(108), create_int(97), create_int(115), create_int(115), create_int(84), create_int(121), create_int(112), create_int(101), create_int(32)}, 10);
+Value v35 = call_method(mod, &v34, "concat", (Value[]){*object_get_field(*this_ptr, "name")}, 1);
+Value v36 = create_array((Value[]){create_int(95), create_int(116), create_int(121), create_int(112), create_int(101), create_int(32), create_int(61), create_int(32), create_int(123), create_int(10)}, 10);
+Value v37 = call_method(mod, &v35, "concat", (Value[]){v36}, 1);
+Value v38 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(46), create_int(98), create_int(97), create_int(115), create_int(101), create_int(32), create_int(61), create_int(32), create_int(123), create_int(10)}, 14);
+Value v39 = call_method(mod, &v37, "concat", (Value[]){v38}, 1);
+Value v40 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(46), create_int(109), create_int(101), create_int(116), create_int(104), create_int(111), create_int(100), create_int(115), create_int(32), create_int(61), create_int(32), create_int(40), create_int(77), create_int(101), create_int(116), create_int(104), create_int(111), create_int(100), create_int(70), create_int(117), create_int(110), create_int(99), create_int(91), create_int(93), create_int(41), create_int(123)}, 34);
 Value v41 = call_method(mod, &v39, "concat", (Value[]){v40}, 1);
-parentStr = v41;
-}
-Value v42 = create_array((Value[]){create_int(67), create_int(108), create_int(97), create_int(115), create_int(115), create_int(84), create_int(121), create_int(112), create_int(101), create_int(32)}, 10);
-Value v43 = call_method(mod, &v42, "concat", (Value[]){*object_get_field(*this_ptr, "name")}, 1);
-Value v44 = create_array((Value[]){create_int(95), create_int(116), create_int(121), create_int(112), create_int(101), create_int(32), create_int(61), create_int(32), create_int(123), create_int(10)}, 10);
-Value v45 = call_method(mod, &v43, "concat", (Value[]){v44}, 1);
-Value v46 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(46), create_int(98), create_int(97), create_int(115), create_int(101), create_int(32), create_int(61), create_int(32), create_int(123), create_int(10)}, 14);
-Value v47 = call_method(mod, &v45, "concat", (Value[]){v46}, 1);
-Value v48 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(46), create_int(109), create_int(101), create_int(116), create_int(104), create_int(111), create_int(100), create_int(115), create_int(32), create_int(61), create_int(32), create_int(40), create_int(77), create_int(101), create_int(116), create_int(104), create_int(111), create_int(100), create_int(70), create_int(117), create_int(110), create_int(99), create_int(91), create_int(93), create_int(41), create_int(123)}, 34);
-Value v49 = call_method(mod, &v47, "concat", (Value[]){v48}, 1);
-Value v50 = create_array((Value[]){create_int(44), create_int(32)}, 2);
-Value v51 = call_method(mod, &methodFuncInitializers, "join", (Value[]){v50}, 1);
-Value v52 = call_method(mod, &v49, "concat", (Value[]){v51}, 1);
-Value v53 = create_array((Value[]){create_int(125), create_int(44), create_int(10)}, 3);
-Value v54 = call_method(mod, &v52, "concat", (Value[]){v53}, 1);
-Value v55 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(46), create_int(109), create_int(101), create_int(116), create_int(104), create_int(111), create_int(100), create_int(95), create_int(110), create_int(97), create_int(109), create_int(101), create_int(115), create_int(32), create_int(61), create_int(32), create_int(40), create_int(99), create_int(104), create_int(97), create_int(114), create_int(42), create_int(91), create_int(93), create_int(41), create_int(123)}, 34);
-Value v56 = call_method(mod, &v54, "concat", (Value[]){v55}, 1);
-Value v57 = create_array((Value[]){create_int(44), create_int(32)}, 2);
-Value v58 = call_method(mod, &methodNameInitializers, "join", (Value[]){v57}, 1);
-Value v59 = call_method(mod, &v56, "concat", (Value[]){v58}, 1);
-Value v60 = create_array((Value[]){create_int(125), create_int(44), create_int(10)}, 3);
-Value v61 = call_method(mod, &v59, "concat", (Value[]){v60}, 1);
-Value v62 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(46), create_int(109), create_int(101), create_int(116), create_int(104), create_int(111), create_int(100), create_int(95), create_int(99), create_int(111), create_int(117), create_int(110), create_int(116), create_int(32), create_int(61), create_int(32)}, 24);
-Value v63 = call_method(mod, &v61, "concat", (Value[]){v62}, 1);
-Value v64 = call_method(mod, &*object_get_field(vtable, "entries"), "length", (Value[]){}, 0);
-Value v65 = call_method(mod, &v64, "toString", (Value[]){}, 0);
-Value v66 = call_method(mod, &v63, "concat", (Value[]){v65}, 1);
-Value v67 = create_array((Value[]){create_int(10)}, 1);
-Value v68 = call_method(mod, &v66, "concat", (Value[]){v67}, 1);
-Value v69 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(125), create_int(44), create_int(10)}, 7);
-Value v70 = call_method(mod, &v68, "concat", (Value[]){v69}, 1);
-Value v71 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(46), create_int(110), create_int(97), create_int(109), create_int(101), create_int(32), create_int(61), create_int(32), create_int(34)}, 13);
+Value v42 = create_array((Value[]){create_int(44), create_int(32)}, 2);
+Value v43 = call_method(mod, &methodFuncInitializers, "join", (Value[]){v42}, 1);
+Value v44 = call_method(mod, &v41, "concat", (Value[]){v43}, 1);
+Value v45 = create_array((Value[]){create_int(125), create_int(44), create_int(10)}, 3);
+Value v46 = call_method(mod, &v44, "concat", (Value[]){v45}, 1);
+Value v47 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(46), create_int(109), create_int(101), create_int(116), create_int(104), create_int(111), create_int(100), create_int(95), create_int(110), create_int(97), create_int(109), create_int(101), create_int(115), create_int(32), create_int(61), create_int(32), create_int(40), create_int(99), create_int(104), create_int(97), create_int(114), create_int(42), create_int(91), create_int(93), create_int(41), create_int(123)}, 34);
+Value v48 = call_method(mod, &v46, "concat", (Value[]){v47}, 1);
+Value v49 = create_array((Value[]){create_int(44), create_int(32)}, 2);
+Value v50 = call_method(mod, &methodNameInitializers, "join", (Value[]){v49}, 1);
+Value v51 = call_method(mod, &v48, "concat", (Value[]){v50}, 1);
+Value v52 = create_array((Value[]){create_int(125), create_int(44), create_int(10)}, 3);
+Value v53 = call_method(mod, &v51, "concat", (Value[]){v52}, 1);
+Value v54 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(46), create_int(109), create_int(101), create_int(116), create_int(104), create_int(111), create_int(100), create_int(95), create_int(99), create_int(111), create_int(117), create_int(110), create_int(116), create_int(32), create_int(61), create_int(32)}, 24);
+Value v55 = call_method(mod, &v53, "concat", (Value[]){v54}, 1);
+Value v56 = call_method(mod, &*object_get_field(vtable, "entries"), "length", (Value[]){}, 0);
+Value v57 = call_method(mod, &v56, "toString", (Value[]){}, 0);
+Value v58 = call_method(mod, &v55, "concat", (Value[]){v57}, 1);
+Value v59 = create_array((Value[]){create_int(10)}, 1);
+Value v60 = call_method(mod, &v58, "concat", (Value[]){v59}, 1);
+Value v61 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(125), create_int(44), create_int(10)}, 7);
+Value v62 = call_method(mod, &v60, "concat", (Value[]){v61}, 1);
+Value v63 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(46), create_int(110), create_int(97), create_int(109), create_int(101), create_int(32), create_int(61), create_int(32), create_int(34)}, 13);
+Value v64 = call_method(mod, &v62, "concat", (Value[]){v63}, 1);
+Value v65 = call_method(mod, &v64, "concat", (Value[]){*object_get_field(*this_ptr, "name")}, 1);
+Value v66 = create_array((Value[]){create_int(34), create_int(44), create_int(10)}, 3);
+Value v67 = call_method(mod, &v65, "concat", (Value[]){v66}, 1);
+Value v68 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(46), create_int(112), create_int(97), create_int(114), create_int(101), create_int(110), create_int(116), create_int(32), create_int(61), create_int(32)}, 14);
+Value v69 = call_method(mod, &v67, "concat", (Value[]){v68}, 1);
+Value v70 = call_method(mod, &v69, "concat", (Value[]){parentStr}, 1);
+Value v71 = create_array((Value[]){create_int(44), create_int(10)}, 2);
 Value v72 = call_method(mod, &v70, "concat", (Value[]){v71}, 1);
-Value v73 = call_method(mod, &v72, "concat", (Value[]){*object_get_field(*this_ptr, "name")}, 1);
-Value v74 = create_array((Value[]){create_int(34), create_int(44), create_int(10)}, 3);
-Value v75 = call_method(mod, &v73, "concat", (Value[]){v74}, 1);
-Value v76 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(46), create_int(112), create_int(97), create_int(114), create_int(101), create_int(110), create_int(116), create_int(32), create_int(61), create_int(32)}, 14);
-Value v77 = call_method(mod, &v75, "concat", (Value[]){v76}, 1);
-Value v78 = call_method(mod, &v77, "concat", (Value[]){parentStr}, 1);
-Value v79 = create_array((Value[]){create_int(44), create_int(10)}, 2);
-Value v80 = call_method(mod, &v78, "concat", (Value[]){v79}, 1);
-Value v81 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(46), create_int(102), create_int(105), create_int(101), create_int(108), create_int(100), create_int(95), create_int(110), create_int(97), create_int(109), create_int(101), create_int(115), create_int(32), create_int(61), create_int(32), create_int(40), create_int(99), create_int(104), create_int(97), create_int(114), create_int(42), create_int(91), create_int(93), create_int(41), create_int(123)}, 29);
-Value v82 = call_method(mod, &v80, "concat", (Value[]){v81}, 1);
-Value v83 = create_array((Value[]){create_int(44), create_int(32)}, 2);
-Value v84 = call_method(mod, &fieldNameInitializers, "join", (Value[]){v83}, 1);
-Value v85 = call_method(mod, &v82, "concat", (Value[]){v84}, 1);
-Value v86 = create_array((Value[]){create_int(125), create_int(44), create_int(10)}, 3);
-Value v87 = call_method(mod, &v85, "concat", (Value[]){v86}, 1);
-Value v88 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(46), create_int(102), create_int(105), create_int(101), create_int(108), create_int(100), create_int(95), create_int(99), create_int(111), create_int(117), create_int(110), create_int(116), create_int(32), create_int(61), create_int(32)}, 19);
-Value v89 = call_method(mod, &v87, "concat", (Value[]){v88}, 1);
-Value v90 = call_method(mod, &fieldNameInitializers, "length", (Value[]){}, 0);
-Value v91 = call_method(mod, &v90, "toString", (Value[]){}, 0);
-Value v92 = call_method(mod, &v89, "concat", (Value[]){v91}, 1);
-Value v93 = create_array((Value[]){create_int(10)}, 1);
-Value v94 = call_method(mod, &v92, "concat", (Value[]){v93}, 1);
-Value v95 = create_array((Value[]){create_int(125), create_int(59), create_int(10)}, 3);
-Value v96 = call_method(mod, &v94, "concat", (Value[]){v95}, 1);
-return v96;
+Value v73 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(46), create_int(102), create_int(105), create_int(101), create_int(108), create_int(100), create_int(95), create_int(110), create_int(97), create_int(109), create_int(101), create_int(115), create_int(32), create_int(61), create_int(32), create_int(40), create_int(99), create_int(104), create_int(97), create_int(114), create_int(42), create_int(91), create_int(93), create_int(41), create_int(123)}, 29);
+Value v74 = call_method(mod, &v72, "concat", (Value[]){v73}, 1);
+Value v75 = create_array((Value[]){create_int(44), create_int(32)}, 2);
+Value v76 = call_method(mod, &fieldNameInitializers, "join", (Value[]){v75}, 1);
+Value v77 = call_method(mod, &v74, "concat", (Value[]){v76}, 1);
+Value v78 = create_array((Value[]){create_int(125), create_int(44), create_int(10)}, 3);
+Value v79 = call_method(mod, &v77, "concat", (Value[]){v78}, 1);
+Value v80 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(46), create_int(102), create_int(105), create_int(101), create_int(108), create_int(100), create_int(95), create_int(99), create_int(111), create_int(117), create_int(110), create_int(116), create_int(32), create_int(61), create_int(32)}, 19);
+Value v81 = call_method(mod, &v79, "concat", (Value[]){v80}, 1);
+Value v82 = call_method(mod, &fieldNameInitializers, "length", (Value[]){}, 0);
+Value v83 = call_method(mod, &v82, "toString", (Value[]){}, 0);
+Value v84 = call_method(mod, &v81, "concat", (Value[]){v83}, 1);
+Value v85 = create_array((Value[]){create_int(10)}, 1);
+Value v86 = call_method(mod, &v84, "concat", (Value[]){v85}, 1);
+Value v87 = create_array((Value[]){create_int(125), create_int(59), create_int(10)}, 3);
+Value v88 = call_method(mod, &v86, "concat", (Value[]){v87}, 1);
+return v88;
     return create_null();
 }
 
@@ -886,43 +838,38 @@ Value objectVar = v1;
 Value v2 = create_array((Value[]){}, 0);
 Value compiledArgs = v2;
 Value v3 = create_int(0);
-Value i = v3;
-while (1) {
-Value v4 = call_method(mod, &*object_get_field(*this_ptr, "args"), "length", (Value[]){}, 0);
-Value v5 = call_method(mod, &i, "smaller", (Value[]){v4}, 1);
-if (v5.data.int_value == 0) break;
-Value v6 = call_method(mod, &*object_get_field(*this_ptr, "args"), "get", (Value[]){i}, 1);
-Value v7 = call_method(mod, &v6, "compile", (Value[]){context}, 1);
-Value v8 = call_method(mod, &compiledArgs, "push", (Value[]){v7}, 1);
-compiledArgs = v8;
-Value v9 = create_int(1);
-Value v10 = call_method(mod, &i, "add", (Value[]){v9}, 1);
-i = v10;
+Value v4 = call_method(mod, &*object_get_field(*this_ptr, "args"), "length", NULL, 0);
+while (v3.data.int_value < v4.data.int_value) {
+    Value arg = call_method(mod, &*object_get_field(*this_ptr, "args"), "get", &v3, 1);
+Value v5 = call_method(mod, &arg, "compile", (Value[]){context}, 1);
+Value v6 = call_method(mod, &compiledArgs, "push", (Value[]){v5}, 1);
+compiledArgs = v6;
+    v3.data.int_value++;
 }
-Value v11 = call_method(mod, &context, "newVariable", (Value[]){}, 0);
-Value resultVar = v11;
-Value v12 = create_array((Value[]){create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 6);
-Value v13 = call_method(mod, &v12, "concat", (Value[]){resultVar}, 1);
-Value v14 = create_array((Value[]){create_int(32), create_int(61), create_int(32), create_int(99), create_int(97), create_int(108), create_int(108), create_int(95), create_int(109), create_int(101), create_int(116), create_int(104), create_int(111), create_int(100), create_int(40), create_int(109), create_int(111), create_int(100), create_int(44), create_int(32), create_int(38)}, 21);
-Value v15 = call_method(mod, &v13, "concat", (Value[]){v14}, 1);
-Value v16 = call_method(mod, &v15, "concat", (Value[]){objectVar}, 1);
-Value v17 = create_array((Value[]){create_int(44), create_int(32), create_int(34)}, 3);
-Value v18 = call_method(mod, &v16, "concat", (Value[]){v17}, 1);
-Value v19 = call_method(mod, &v18, "concat", (Value[]){*object_get_field(*this_ptr, "method")}, 1);
-Value v20 = create_array((Value[]){create_int(34), create_int(44), create_int(32), create_int(40), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(91), create_int(93), create_int(41), create_int(123)}, 13);
-Value v21 = call_method(mod, &v19, "concat", (Value[]){v20}, 1);
-Value v22 = create_array((Value[]){create_int(44), create_int(32)}, 2);
-Value v23 = call_method(mod, &compiledArgs, "join", (Value[]){v22}, 1);
-Value v24 = call_method(mod, &v21, "concat", (Value[]){v23}, 1);
-Value v25 = create_array((Value[]){create_int(125), create_int(44), create_int(32)}, 3);
-Value v26 = call_method(mod, &v24, "concat", (Value[]){v25}, 1);
-Value v27 = call_method(mod, &*object_get_field(*this_ptr, "args"), "length", (Value[]){}, 0);
-Value v28 = call_method(mod, &v27, "toString", (Value[]){}, 0);
-Value v29 = call_method(mod, &v26, "concat", (Value[]){v28}, 1);
-Value v30 = create_array((Value[]){create_int(41), create_int(59)}, 2);
-Value v31 = call_method(mod, &v29, "concat", (Value[]){v30}, 1);
-Value v32 = call_method(mod, &context, "emitLine", (Value[]){v31}, 1);
-v32;
+Value v7 = call_method(mod, &context, "newVariable", (Value[]){}, 0);
+Value resultVar = v7;
+Value v8 = create_array((Value[]){create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 6);
+Value v9 = call_method(mod, &v8, "concat", (Value[]){resultVar}, 1);
+Value v10 = create_array((Value[]){create_int(32), create_int(61), create_int(32), create_int(99), create_int(97), create_int(108), create_int(108), create_int(95), create_int(109), create_int(101), create_int(116), create_int(104), create_int(111), create_int(100), create_int(40), create_int(109), create_int(111), create_int(100), create_int(44), create_int(32), create_int(38)}, 21);
+Value v11 = call_method(mod, &v9, "concat", (Value[]){v10}, 1);
+Value v12 = call_method(mod, &v11, "concat", (Value[]){objectVar}, 1);
+Value v13 = create_array((Value[]){create_int(44), create_int(32), create_int(34)}, 3);
+Value v14 = call_method(mod, &v12, "concat", (Value[]){v13}, 1);
+Value v15 = call_method(mod, &v14, "concat", (Value[]){*object_get_field(*this_ptr, "method")}, 1);
+Value v16 = create_array((Value[]){create_int(34), create_int(44), create_int(32), create_int(40), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(91), create_int(93), create_int(41), create_int(123)}, 13);
+Value v17 = call_method(mod, &v15, "concat", (Value[]){v16}, 1);
+Value v18 = create_array((Value[]){create_int(44), create_int(32)}, 2);
+Value v19 = call_method(mod, &compiledArgs, "join", (Value[]){v18}, 1);
+Value v20 = call_method(mod, &v17, "concat", (Value[]){v19}, 1);
+Value v21 = create_array((Value[]){create_int(125), create_int(44), create_int(32)}, 3);
+Value v22 = call_method(mod, &v20, "concat", (Value[]){v21}, 1);
+Value v23 = call_method(mod, &*object_get_field(*this_ptr, "args"), "length", (Value[]){}, 0);
+Value v24 = call_method(mod, &v23, "toString", (Value[]){}, 0);
+Value v25 = call_method(mod, &v22, "concat", (Value[]){v24}, 1);
+Value v26 = create_array((Value[]){create_int(41), create_int(59)}, 2);
+Value v27 = call_method(mod, &v25, "concat", (Value[]){v26}, 1);
+Value v28 = call_method(mod, &context, "emitLine", (Value[]){v27}, 1);
+v28;
 return resultVar;
     return create_null();
 }
@@ -964,40 +911,35 @@ Value FunctionCall_compile(Module* mod, Value* this_ptr, Value* args, size_t arg
     Value context = args[0];    Value v1 = create_array((Value[]){}, 0);
 Value compiledArgs = v1;
 Value v2 = create_int(0);
-Value i = v2;
-while (1) {
-Value v3 = call_method(mod, &*object_get_field(*this_ptr, "args"), "length", (Value[]){}, 0);
-Value v4 = call_method(mod, &i, "smaller", (Value[]){v3}, 1);
-if (v4.data.int_value == 0) break;
-Value v5 = call_method(mod, &*object_get_field(*this_ptr, "args"), "get", (Value[]){i}, 1);
-Value v6 = call_method(mod, &v5, "compile", (Value[]){context}, 1);
-Value v7 = call_method(mod, &compiledArgs, "push", (Value[]){v6}, 1);
-compiledArgs = v7;
-Value v8 = create_int(1);
-Value v9 = call_method(mod, &i, "add", (Value[]){v8}, 1);
-i = v9;
+Value v3 = call_method(mod, &*object_get_field(*this_ptr, "args"), "length", NULL, 0);
+while (v2.data.int_value < v3.data.int_value) {
+    Value arg = call_method(mod, &*object_get_field(*this_ptr, "args"), "get", &v2, 1);
+Value v4 = call_method(mod, &arg, "compile", (Value[]){context}, 1);
+Value v5 = call_method(mod, &compiledArgs, "push", (Value[]){v4}, 1);
+compiledArgs = v5;
+    v2.data.int_value++;
 }
-Value v10 = call_method(mod, &context, "newVariable", (Value[]){}, 0);
-Value resultVar = v10;
-Value v11 = create_array((Value[]){create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 6);
-Value v12 = call_method(mod, &v11, "concat", (Value[]){resultVar}, 1);
-Value v13 = create_array((Value[]){create_int(32), create_int(61), create_int(32), create_int(109), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(95), create_int(99), create_int(97), create_int(108), create_int(108), create_int(40), create_int(109), create_int(111), create_int(100), create_int(44), create_int(32), create_int(34)}, 21);
-Value v14 = call_method(mod, &v12, "concat", (Value[]){v13}, 1);
-Value v15 = call_method(mod, &v14, "concat", (Value[]){*object_get_field(*this_ptr, "name")}, 1);
-Value v16 = create_array((Value[]){create_int(34), create_int(44), create_int(32), create_int(40), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(91), create_int(93), create_int(41), create_int(123)}, 13);
-Value v17 = call_method(mod, &v15, "concat", (Value[]){v16}, 1);
-Value v18 = create_array((Value[]){create_int(44), create_int(32)}, 2);
-Value v19 = call_method(mod, &compiledArgs, "join", (Value[]){v18}, 1);
-Value v20 = call_method(mod, &v17, "concat", (Value[]){v19}, 1);
-Value v21 = create_array((Value[]){create_int(125), create_int(44), create_int(32)}, 3);
-Value v22 = call_method(mod, &v20, "concat", (Value[]){v21}, 1);
-Value v23 = call_method(mod, &*object_get_field(*this_ptr, "args"), "length", (Value[]){}, 0);
-Value v24 = call_method(mod, &v23, "toString", (Value[]){}, 0);
-Value v25 = call_method(mod, &v22, "concat", (Value[]){v24}, 1);
-Value v26 = create_array((Value[]){create_int(41), create_int(59)}, 2);
-Value v27 = call_method(mod, &v25, "concat", (Value[]){v26}, 1);
-Value v28 = call_method(mod, &context, "emitLine", (Value[]){v27}, 1);
-v28;
+Value v6 = call_method(mod, &context, "newVariable", (Value[]){}, 0);
+Value resultVar = v6;
+Value v7 = create_array((Value[]){create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 6);
+Value v8 = call_method(mod, &v7, "concat", (Value[]){resultVar}, 1);
+Value v9 = create_array((Value[]){create_int(32), create_int(61), create_int(32), create_int(109), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(95), create_int(99), create_int(97), create_int(108), create_int(108), create_int(40), create_int(109), create_int(111), create_int(100), create_int(44), create_int(32), create_int(34)}, 21);
+Value v10 = call_method(mod, &v8, "concat", (Value[]){v9}, 1);
+Value v11 = call_method(mod, &v10, "concat", (Value[]){*object_get_field(*this_ptr, "name")}, 1);
+Value v12 = create_array((Value[]){create_int(34), create_int(44), create_int(32), create_int(40), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(91), create_int(93), create_int(41), create_int(123)}, 13);
+Value v13 = call_method(mod, &v11, "concat", (Value[]){v12}, 1);
+Value v14 = create_array((Value[]){create_int(44), create_int(32)}, 2);
+Value v15 = call_method(mod, &compiledArgs, "join", (Value[]){v14}, 1);
+Value v16 = call_method(mod, &v13, "concat", (Value[]){v15}, 1);
+Value v17 = create_array((Value[]){create_int(125), create_int(44), create_int(32)}, 3);
+Value v18 = call_method(mod, &v16, "concat", (Value[]){v17}, 1);
+Value v19 = call_method(mod, &*object_get_field(*this_ptr, "args"), "length", (Value[]){}, 0);
+Value v20 = call_method(mod, &v19, "toString", (Value[]){}, 0);
+Value v21 = call_method(mod, &v18, "concat", (Value[]){v20}, 1);
+Value v22 = create_array((Value[]){create_int(41), create_int(59)}, 2);
+Value v23 = call_method(mod, &v21, "concat", (Value[]){v22}, 1);
+Value v24 = call_method(mod, &context, "emitLine", (Value[]){v23}, 1);
+v24;
 return resultVar;
     return create_null();
 }
@@ -1049,55 +991,45 @@ v6;
 Value v7 = module_call(mod, "CodegenContext", (Value[]){context}, 1);
 Value thenContext = v7;
 Value v8 = create_int(0);
-Value i = v8;
-while (1) {
-Value v9 = call_method(mod, &*object_get_field(*this_ptr, "thenBody"), "length", (Value[]){}, 0);
-Value v10 = call_method(mod, &i, "smaller", (Value[]){v9}, 1);
-if (v10.data.int_value == 0) break;
-Value v11 = call_method(mod, &*object_get_field(*this_ptr, "thenBody"), "get", (Value[]){i}, 1);
-Value v12 = call_method(mod, &v11, "compile", (Value[]){thenContext}, 1);
+Value v9 = call_method(mod, &*object_get_field(*this_ptr, "thenBody"), "length", NULL, 0);
+while (v8.data.int_value < v9.data.int_value) {
+    Value stmt = call_method(mod, &*object_get_field(*this_ptr, "thenBody"), "get", &v8, 1);
+Value v10 = call_method(mod, &stmt, "compile", (Value[]){thenContext}, 1);
+v10;
+    v8.data.int_value++;
+}
+Value v11 = call_method(mod, &thenContext, "getCurrentCode", (Value[]){}, 0);
+Value v12 = call_method(mod, &context, "emitLine", (Value[]){v11}, 1);
 v12;
-Value v13 = create_int(1);
-Value v14 = call_method(mod, &i, "add", (Value[]){v13}, 1);
-i = v14;
-}
-Value v15 = call_method(mod, &thenContext, "getCurrentCode", (Value[]){}, 0);
-Value v16 = call_method(mod, &context, "emitLine", (Value[]){v15}, 1);
-v16;
-Value v17 = create_array((Value[]){create_int(125)}, 1);
-Value v18 = call_method(mod, &context, "emitLine", (Value[]){v17}, 1);
-v18;
-Value v19 = call_method(mod, &*object_get_field(*this_ptr, "elseBody"), "length", (Value[]){}, 0);
-Value v20 = create_int(0);
-Value v21 = call_method(mod, &v19, "greater", (Value[]){v20}, 1);
-if (v21.data.int_value != 0) {
-Value v22 = create_array((Value[]){create_int(101), create_int(108), create_int(115), create_int(101), create_int(32), create_int(123)}, 6);
-Value v23 = call_method(mod, &context, "emitLine", (Value[]){v22}, 1);
+Value v13 = create_array((Value[]){create_int(125)}, 1);
+Value v14 = call_method(mod, &context, "emitLine", (Value[]){v13}, 1);
+v14;
+Value v15 = call_method(mod, &*object_get_field(*this_ptr, "elseBody"), "length", (Value[]){}, 0);
+Value v16 = create_int(0);
+Value v17 = call_method(mod, &v15, "greater", (Value[]){v16}, 1);
+if (v17.data.int_value != 0) {
+Value v18 = create_array((Value[]){create_int(101), create_int(108), create_int(115), create_int(101), create_int(32), create_int(123)}, 6);
+Value v19 = call_method(mod, &context, "emitLine", (Value[]){v18}, 1);
+v19;
+Value v20 = module_call(mod, "CodegenContext", (Value[]){context}, 1);
+Value elseContext = v20;
+Value v21 = create_int(0);
+Value v22 = call_method(mod, &*object_get_field(*this_ptr, "elseBody"), "length", NULL, 0);
+while (v21.data.int_value < v22.data.int_value) {
+    Value stmt = call_method(mod, &*object_get_field(*this_ptr, "elseBody"), "get", &v21, 1);
+Value v23 = call_method(mod, &stmt, "compile", (Value[]){elseContext}, 1);
 v23;
-Value v24 = module_call(mod, "CodegenContext", (Value[]){context}, 1);
-Value elseContext = v24;
-Value v25 = create_int(0);
-i = v25;
-while (1) {
-Value v26 = call_method(mod, &*object_get_field(*this_ptr, "elseBody"), "length", (Value[]){}, 0);
-Value v27 = call_method(mod, &i, "smaller", (Value[]){v26}, 1);
-if (v27.data.int_value == 0) break;
-Value v28 = call_method(mod, &*object_get_field(*this_ptr, "elseBody"), "get", (Value[]){i}, 1);
-Value v29 = call_method(mod, &v28, "compile", (Value[]){elseContext}, 1);
-v29;
-Value v30 = create_int(1);
-Value v31 = call_method(mod, &i, "add", (Value[]){v30}, 1);
-i = v31;
+    v21.data.int_value++;
 }
-Value v32 = call_method(mod, &elseContext, "getCurrentCode", (Value[]){}, 0);
-Value v33 = call_method(mod, &context, "emitLine", (Value[]){v32}, 1);
-v33;
-Value v34 = create_array((Value[]){create_int(125)}, 1);
-Value v35 = call_method(mod, &context, "emitLine", (Value[]){v34}, 1);
-v35;
+Value v24 = call_method(mod, &elseContext, "getCurrentCode", (Value[]){}, 0);
+Value v25 = call_method(mod, &context, "emitLine", (Value[]){v24}, 1);
+v25;
+Value v26 = create_array((Value[]){create_int(125)}, 1);
+Value v27 = call_method(mod, &context, "emitLine", (Value[]){v26}, 1);
+v27;
 }
-Value v36 = create_array((Value[]){}, 0);
-return v36;
+Value v28 = create_array((Value[]){}, 0);
+return v28;
     return create_null();
 }
 
@@ -1149,26 +1081,21 @@ v8;
 Value v9 = module_call(mod, "CodegenContext", (Value[]){context}, 1);
 Value bodyContext = v9;
 Value v10 = create_int(0);
-Value i = v10;
-while (1) {
-Value v11 = call_method(mod, &*object_get_field(*this_ptr, "body"), "length", (Value[]){}, 0);
-Value v12 = call_method(mod, &i, "smaller", (Value[]){v11}, 1);
-if (v12.data.int_value == 0) break;
-Value v13 = call_method(mod, &*object_get_field(*this_ptr, "body"), "get", (Value[]){i}, 1);
-Value v14 = call_method(mod, &v13, "compile", (Value[]){bodyContext}, 1);
-v14;
-Value v15 = create_int(1);
-Value v16 = call_method(mod, &i, "add", (Value[]){v15}, 1);
-i = v16;
+Value v11 = call_method(mod, &*object_get_field(*this_ptr, "body"), "length", NULL, 0);
+while (v10.data.int_value < v11.data.int_value) {
+    Value stmt = call_method(mod, &*object_get_field(*this_ptr, "body"), "get", &v10, 1);
+Value v12 = call_method(mod, &stmt, "compile", (Value[]){bodyContext}, 1);
+v12;
+    v10.data.int_value++;
 }
-Value v17 = call_method(mod, &bodyContext, "getCurrentCode", (Value[]){}, 0);
-Value v18 = call_method(mod, &context, "emitLine", (Value[]){v17}, 1);
-v18;
-Value v19 = create_array((Value[]){create_int(125)}, 1);
-Value v20 = call_method(mod, &context, "emitLine", (Value[]){v19}, 1);
-v20;
-Value v21 = create_array((Value[]){}, 0);
-return v21;
+Value v13 = call_method(mod, &bodyContext, "getCurrentCode", (Value[]){}, 0);
+Value v14 = call_method(mod, &context, "emitLine", (Value[]){v13}, 1);
+v14;
+Value v15 = create_array((Value[]){create_int(125)}, 1);
+Value v16 = call_method(mod, &context, "emitLine", (Value[]){v15}, 1);
+v16;
+Value v17 = create_array((Value[]){}, 0);
+return v17;
     return create_null();
 }
 
@@ -1182,6 +1109,111 @@ ClassType WhileStatement_type = {
     .parent = &ASTFunctionNode_type,
     .field_names = (char*[]){"condition", "body", "filename", "line"},
     .field_count = 4
+};
+
+Value ForInStatement_init(Module* mod, Value* this_ptr, Value* args, size_t arg_count) {
+    if (arg_count != 5) {
+        fprintf(stderr, "init expects 5 argument(s)\n");
+        exit(1);
+    }
+    Value* self = this_ptr->data.object.fields;
+    Value filename = args[0];
+    Value line = args[1];
+    Value iteratorName = args[2];
+    Value arrayExpression = args[3];
+    Value body = args[4];    object_set_field(&*this_ptr, "filename", filename);
+object_set_field(&*this_ptr, "line", line);
+object_set_field(&*this_ptr, "iteratorName", iteratorName);
+object_set_field(&*this_ptr, "arrayExpression", arrayExpression);
+object_set_field(&*this_ptr, "body", body);
+    return create_null();
+}
+
+Value ForInStatement_compile(Module* mod, Value* this_ptr, Value* args, size_t arg_count) {
+    if (arg_count != 1) {
+        fprintf(stderr, "compile expects 1 argument(s)\n");
+        exit(1);
+    }
+    Value* self = this_ptr->data.object.fields;
+    Value context = args[0];    Value v1 = call_method(mod, &*object_get_field(*this_ptr, "arrayExpression"), "compile", (Value[]){context}, 1);
+Value arrayVar = v1;
+Value v2 = call_method(mod, &context, "newVariable", (Value[]){}, 0);
+Value indexVar = v2;
+Value v3 = call_method(mod, &context, "newVariable", (Value[]){}, 0);
+Value lengthVar = v3;
+Value v4 = create_array((Value[]){create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 6);
+Value v5 = call_method(mod, &v4, "concat", (Value[]){indexVar}, 1);
+Value v6 = create_array((Value[]){create_int(32), create_int(61), create_int(32), create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(105), create_int(110), create_int(116), create_int(40), create_int(48), create_int(41), create_int(59)}, 17);
+Value v7 = call_method(mod, &v5, "concat", (Value[]){v6}, 1);
+Value v8 = call_method(mod, &context, "emitLine", (Value[]){v7}, 1);
+v8;
+Value v9 = create_array((Value[]){create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 6);
+Value v10 = call_method(mod, &v9, "concat", (Value[]){lengthVar}, 1);
+Value v11 = create_array((Value[]){create_int(32), create_int(61), create_int(32), create_int(99), create_int(97), create_int(108), create_int(108), create_int(95), create_int(109), create_int(101), create_int(116), create_int(104), create_int(111), create_int(100), create_int(40), create_int(109), create_int(111), create_int(100), create_int(44), create_int(32), create_int(38)}, 21);
+Value v12 = call_method(mod, &v10, "concat", (Value[]){v11}, 1);
+Value v13 = call_method(mod, &v12, "concat", (Value[]){arrayVar}, 1);
+Value v14 = create_array((Value[]){create_int(44), create_int(32), create_int(34), create_int(108), create_int(101), create_int(110), create_int(103), create_int(116), create_int(104), create_int(34), create_int(44), create_int(32), create_int(78), create_int(85), create_int(76), create_int(76), create_int(44), create_int(32), create_int(48), create_int(41), create_int(59)}, 21);
+Value v15 = call_method(mod, &v13, "concat", (Value[]){v14}, 1);
+Value v16 = call_method(mod, &context, "emitLine", (Value[]){v15}, 1);
+v16;
+Value v17 = create_array((Value[]){create_int(119), create_int(104), create_int(105), create_int(108), create_int(101), create_int(32), create_int(40)}, 7);
+Value v18 = call_method(mod, &v17, "concat", (Value[]){indexVar}, 1);
+Value v19 = create_array((Value[]){create_int(46), create_int(100), create_int(97), create_int(116), create_int(97), create_int(46), create_int(105), create_int(110), create_int(116), create_int(95), create_int(118), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32), create_int(60), create_int(32)}, 18);
+Value v20 = call_method(mod, &v18, "concat", (Value[]){v19}, 1);
+Value v21 = call_method(mod, &v20, "concat", (Value[]){lengthVar}, 1);
+Value v22 = create_array((Value[]){create_int(46), create_int(100), create_int(97), create_int(116), create_int(97), create_int(46), create_int(105), create_int(110), create_int(116), create_int(95), create_int(118), create_int(97), create_int(108), create_int(117), create_int(101), create_int(41), create_int(32), create_int(123)}, 18);
+Value v23 = call_method(mod, &v21, "concat", (Value[]){v22}, 1);
+Value v24 = call_method(mod, &context, "emitLine", (Value[]){v23}, 1);
+v24;
+Value v25 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 10);
+Value v26 = call_method(mod, &v25, "concat", (Value[]){*object_get_field(*this_ptr, "iteratorName")}, 1);
+Value v27 = create_array((Value[]){create_int(32), create_int(61), create_int(32), create_int(99), create_int(97), create_int(108), create_int(108), create_int(95), create_int(109), create_int(101), create_int(116), create_int(104), create_int(111), create_int(100), create_int(40), create_int(109), create_int(111), create_int(100), create_int(44), create_int(32), create_int(38)}, 21);
+Value v28 = call_method(mod, &v26, "concat", (Value[]){v27}, 1);
+Value v29 = call_method(mod, &v28, "concat", (Value[]){arrayVar}, 1);
+Value v30 = create_array((Value[]){create_int(44), create_int(32), create_int(34), create_int(103), create_int(101), create_int(116), create_int(34), create_int(44), create_int(32), create_int(38)}, 10);
+Value v31 = call_method(mod, &v29, "concat", (Value[]){v30}, 1);
+Value v32 = call_method(mod, &v31, "concat", (Value[]){indexVar}, 1);
+Value v33 = create_array((Value[]){create_int(44), create_int(32), create_int(49), create_int(41), create_int(59)}, 5);
+Value v34 = call_method(mod, &v32, "concat", (Value[]){v33}, 1);
+Value v35 = call_method(mod, &context, "emitLine", (Value[]){v34}, 1);
+v35;
+Value v36 = module_call(mod, "CodegenContext", (Value[]){context}, 1);
+Value bodyContext = v36;
+Value v37 = create_int(0);
+Value v38 = call_method(mod, &*object_get_field(*this_ptr, "body"), "length", NULL, 0);
+while (v37.data.int_value < v38.data.int_value) {
+    Value stmt = call_method(mod, &*object_get_field(*this_ptr, "body"), "get", &v37, 1);
+Value v39 = call_method(mod, &stmt, "compile", (Value[]){bodyContext}, 1);
+v39;
+    v37.data.int_value++;
+}
+Value v40 = call_method(mod, &bodyContext, "getCurrentCode", (Value[]){}, 0);
+Value v41 = call_method(mod, &context, "emitLine", (Value[]){v40}, 1);
+v41;
+Value v42 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32)}, 4);
+Value v43 = call_method(mod, &v42, "concat", (Value[]){indexVar}, 1);
+Value v44 = create_array((Value[]){create_int(46), create_int(100), create_int(97), create_int(116), create_int(97), create_int(46), create_int(105), create_int(110), create_int(116), create_int(95), create_int(118), create_int(97), create_int(108), create_int(117), create_int(101), create_int(43), create_int(43), create_int(59)}, 18);
+Value v45 = call_method(mod, &v43, "concat", (Value[]){v44}, 1);
+Value v46 = call_method(mod, &context, "emitLine", (Value[]){v45}, 1);
+v46;
+Value v47 = create_array((Value[]){create_int(125)}, 1);
+Value v48 = call_method(mod, &context, "emitLine", (Value[]){v47}, 1);
+v48;
+Value v49 = create_array((Value[]){}, 0);
+return v49;
+    return create_null();
+}
+
+ClassType ForInStatement_type = {
+    .base = {
+        .methods = (MethodFunc[]){ForInStatement_init, ForInStatement_compile},
+        .method_names = (char*[]){"init", "compile"},
+        .method_count = 2
+    },
+    .name = "ForInStatement",
+    .parent = &ASTFunctionNode_type,
+    .field_names = (char*[]){"iteratorName", "arrayExpression", "body", "filename", "line"},
+    .field_count = 5
 };
 
 Value AssignmentStatement_init(Module* mod, Value* this_ptr, Value* args, size_t arg_count) {
@@ -1455,41 +1487,36 @@ Value StringLiteral_compile(Module* mod, Value* this_ptr, Value* args, size_t ar
     Value context = args[0];    Value v1 = create_array((Value[]){}, 0);
 Value values = v1;
 Value v2 = create_int(0);
-Value i = v2;
-while (1) {
-Value v3 = call_method(mod, &*object_get_field(*this_ptr, "value"), "length", (Value[]){}, 0);
-Value v4 = call_method(mod, &i, "smaller", (Value[]){v3}, 1);
-if (v4.data.int_value == 0) break;
-Value v5 = create_array((Value[]){create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(105), create_int(110), create_int(116), create_int(40)}, 11);
-Value v6 = call_method(mod, &*object_get_field(*this_ptr, "value"), "get", (Value[]){i}, 1);
-Value v7 = call_method(mod, &v6, "toString", (Value[]){}, 0);
-Value v8 = call_method(mod, &v5, "concat", (Value[]){v7}, 1);
-Value v9 = create_array((Value[]){create_int(41)}, 1);
-Value v10 = call_method(mod, &v8, "concat", (Value[]){v9}, 1);
-Value v11 = call_method(mod, &values, "push", (Value[]){v10}, 1);
-values = v11;
-Value v12 = create_int(1);
-Value v13 = call_method(mod, &i, "add", (Value[]){v12}, 1);
-i = v13;
+Value v3 = call_method(mod, &*object_get_field(*this_ptr, "value"), "length", NULL, 0);
+while (v2.data.int_value < v3.data.int_value) {
+    Value char_ = call_method(mod, &*object_get_field(*this_ptr, "value"), "get", &v2, 1);
+Value v4 = create_array((Value[]){create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(105), create_int(110), create_int(116), create_int(40)}, 11);
+Value v5 = call_method(mod, &char_, "toString", (Value[]){}, 0);
+Value v6 = call_method(mod, &v4, "concat", (Value[]){v5}, 1);
+Value v7 = create_array((Value[]){create_int(41)}, 1);
+Value v8 = call_method(mod, &v6, "concat", (Value[]){v7}, 1);
+Value v9 = call_method(mod, &values, "push", (Value[]){v8}, 1);
+values = v9;
+    v2.data.int_value++;
 }
-Value v14 = call_method(mod, &context, "newVariable", (Value[]){}, 0);
-Value resultVar = v14;
-Value v15 = create_array((Value[]){create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 6);
-Value v16 = call_method(mod, &v15, "concat", (Value[]){resultVar}, 1);
-Value v17 = create_array((Value[]){create_int(32), create_int(61), create_int(32), create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(97), create_int(114), create_int(114), create_int(97), create_int(121), create_int(40), create_int(40), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(91), create_int(93), create_int(41), create_int(123)}, 26);
-Value v18 = call_method(mod, &v16, "concat", (Value[]){v17}, 1);
-Value v19 = create_array((Value[]){create_int(44), create_int(32)}, 2);
-Value v20 = call_method(mod, &values, "join", (Value[]){v19}, 1);
-Value v21 = call_method(mod, &v18, "concat", (Value[]){v20}, 1);
-Value v22 = create_array((Value[]){create_int(125), create_int(44), create_int(32)}, 3);
-Value v23 = call_method(mod, &v21, "concat", (Value[]){v22}, 1);
-Value v24 = call_method(mod, &*object_get_field(*this_ptr, "value"), "length", (Value[]){}, 0);
-Value v25 = call_method(mod, &v24, "toString", (Value[]){}, 0);
-Value v26 = call_method(mod, &v23, "concat", (Value[]){v25}, 1);
-Value v27 = create_array((Value[]){create_int(41), create_int(59)}, 2);
-Value v28 = call_method(mod, &v26, "concat", (Value[]){v27}, 1);
-Value v29 = call_method(mod, &context, "emitLine", (Value[]){v28}, 1);
-v29;
+Value v10 = call_method(mod, &context, "newVariable", (Value[]){}, 0);
+Value resultVar = v10;
+Value v11 = create_array((Value[]){create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 6);
+Value v12 = call_method(mod, &v11, "concat", (Value[]){resultVar}, 1);
+Value v13 = create_array((Value[]){create_int(32), create_int(61), create_int(32), create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(97), create_int(114), create_int(114), create_int(97), create_int(121), create_int(40), create_int(40), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(91), create_int(93), create_int(41), create_int(123)}, 26);
+Value v14 = call_method(mod, &v12, "concat", (Value[]){v13}, 1);
+Value v15 = create_array((Value[]){create_int(44), create_int(32)}, 2);
+Value v16 = call_method(mod, &values, "join", (Value[]){v15}, 1);
+Value v17 = call_method(mod, &v14, "concat", (Value[]){v16}, 1);
+Value v18 = create_array((Value[]){create_int(125), create_int(44), create_int(32)}, 3);
+Value v19 = call_method(mod, &v17, "concat", (Value[]){v18}, 1);
+Value v20 = call_method(mod, &*object_get_field(*this_ptr, "value"), "length", (Value[]){}, 0);
+Value v21 = call_method(mod, &v20, "toString", (Value[]){}, 0);
+Value v22 = call_method(mod, &v19, "concat", (Value[]){v21}, 1);
+Value v23 = create_array((Value[]){create_int(41), create_int(59)}, 2);
+Value v24 = call_method(mod, &v22, "concat", (Value[]){v23}, 1);
+Value v25 = call_method(mod, &context, "emitLine", (Value[]){v24}, 1);
+v25;
 return resultVar;
     return create_null();
 }
@@ -1571,37 +1598,32 @@ Value ArrayLiteral_compile(Module* mod, Value* this_ptr, Value* args, size_t arg
     Value context = args[0];    Value v1 = create_array((Value[]){}, 0);
 Value compiledElements = v1;
 Value v2 = create_int(0);
-Value i = v2;
-while (1) {
-Value v3 = call_method(mod, &*object_get_field(*this_ptr, "elements"), "length", (Value[]){}, 0);
-Value v4 = call_method(mod, &i, "smaller", (Value[]){v3}, 1);
-if (v4.data.int_value == 0) break;
-Value v5 = call_method(mod, &*object_get_field(*this_ptr, "elements"), "get", (Value[]){i}, 1);
-Value v6 = call_method(mod, &v5, "compile", (Value[]){context}, 1);
-Value v7 = call_method(mod, &compiledElements, "push", (Value[]){v6}, 1);
-compiledElements = v7;
-Value v8 = create_int(1);
-Value v9 = call_method(mod, &i, "add", (Value[]){v8}, 1);
-i = v9;
+Value v3 = call_method(mod, &*object_get_field(*this_ptr, "elements"), "length", NULL, 0);
+while (v2.data.int_value < v3.data.int_value) {
+    Value element = call_method(mod, &*object_get_field(*this_ptr, "elements"), "get", &v2, 1);
+Value v4 = call_method(mod, &element, "compile", (Value[]){context}, 1);
+Value v5 = call_method(mod, &compiledElements, "push", (Value[]){v4}, 1);
+compiledElements = v5;
+    v2.data.int_value++;
 }
-Value v10 = call_method(mod, &context, "newVariable", (Value[]){}, 0);
-Value resultVar = v10;
-Value v11 = create_array((Value[]){create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 6);
-Value v12 = call_method(mod, &v11, "concat", (Value[]){resultVar}, 1);
-Value v13 = create_array((Value[]){create_int(32), create_int(61), create_int(32), create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(97), create_int(114), create_int(114), create_int(97), create_int(121), create_int(40), create_int(40), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(91), create_int(93), create_int(41), create_int(123)}, 26);
-Value v14 = call_method(mod, &v12, "concat", (Value[]){v13}, 1);
-Value v15 = create_array((Value[]){create_int(44), create_int(32)}, 2);
-Value v16 = call_method(mod, &compiledElements, "join", (Value[]){v15}, 1);
-Value v17 = call_method(mod, &v14, "concat", (Value[]){v16}, 1);
-Value v18 = create_array((Value[]){create_int(125), create_int(44), create_int(32)}, 3);
-Value v19 = call_method(mod, &v17, "concat", (Value[]){v18}, 1);
-Value v20 = call_method(mod, &*object_get_field(*this_ptr, "elements"), "length", (Value[]){}, 0);
-Value v21 = call_method(mod, &v20, "toString", (Value[]){}, 0);
-Value v22 = call_method(mod, &v19, "concat", (Value[]){v21}, 1);
-Value v23 = create_array((Value[]){create_int(41), create_int(59)}, 2);
-Value v24 = call_method(mod, &v22, "concat", (Value[]){v23}, 1);
-Value v25 = call_method(mod, &context, "emitLine", (Value[]){v24}, 1);
-v25;
+Value v6 = call_method(mod, &context, "newVariable", (Value[]){}, 0);
+Value resultVar = v6;
+Value v7 = create_array((Value[]){create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32)}, 6);
+Value v8 = call_method(mod, &v7, "concat", (Value[]){resultVar}, 1);
+Value v9 = create_array((Value[]){create_int(32), create_int(61), create_int(32), create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(97), create_int(114), create_int(114), create_int(97), create_int(121), create_int(40), create_int(40), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(91), create_int(93), create_int(41), create_int(123)}, 26);
+Value v10 = call_method(mod, &v8, "concat", (Value[]){v9}, 1);
+Value v11 = create_array((Value[]){create_int(44), create_int(32)}, 2);
+Value v12 = call_method(mod, &compiledElements, "join", (Value[]){v11}, 1);
+Value v13 = call_method(mod, &v10, "concat", (Value[]){v12}, 1);
+Value v14 = create_array((Value[]){create_int(125), create_int(44), create_int(32)}, 3);
+Value v15 = call_method(mod, &v13, "concat", (Value[]){v14}, 1);
+Value v16 = call_method(mod, &*object_get_field(*this_ptr, "elements"), "length", (Value[]){}, 0);
+Value v17 = call_method(mod, &v16, "toString", (Value[]){}, 0);
+Value v18 = call_method(mod, &v15, "concat", (Value[]){v17}, 1);
+Value v19 = create_array((Value[]){create_int(41), create_int(59)}, 2);
+Value v20 = call_method(mod, &v18, "concat", (Value[]){v19}, 1);
+Value v21 = call_method(mod, &context, "emitLine", (Value[]){v20}, 1);
+v21;
 return resultVar;
     return create_null();
 }
@@ -2365,54 +2387,62 @@ Value v8 = call_method(mod, &*this_ptr, "parseWhileStatement", (Value[]){}, 0);
 return v8;
 }
 else {
-Value v9 = create_array((Value[]){create_int(114), create_int(101), create_int(116), create_int(117), create_int(114), create_int(110)}, 6);
+Value v9 = create_array((Value[]){create_int(102), create_int(111), create_int(114)}, 3);
 Value v10 = call_method(mod, &*this_ptr, "accept", (Value[]){v9}, 1);
 if (v10.data.int_value != 0) {
-Value v11 = call_method(mod, &*this_ptr, "parseExpression", (Value[]){}, 0);
-Value expr = v11;
-Value v12 = create_array((Value[]){create_int(59)}, 1);
-Value v13 = call_method(mod, &*this_ptr, "expect", (Value[]){v12}, 1);
-v13;
-Value v14 = module_call(mod, "ReturnStatement", (Value[]){*object_get_field(*this_ptr, "filename"), *object_get_field(*this_ptr, "line"), expr}, 3);
-return v14;
+Value v11 = call_method(mod, &*this_ptr, "parseForInStatement", (Value[]){}, 0);
+return v11;
 }
 else {
-Value v15 = create_array((Value[]){create_int(97), create_int(117), create_int(116), create_int(111)}, 4);
-Value v16 = call_method(mod, &*this_ptr, "accept", (Value[]){v15}, 1);
-if (v16.data.int_value != 0) {
-Value v17 = call_method(mod, &*this_ptr, "parseIdentifier", (Value[]){}, 0);
-Value name = v17;
-Value v18 = create_array((Value[]){create_int(61)}, 1);
-Value v19 = call_method(mod, &*this_ptr, "expect", (Value[]){v18}, 1);
-v19;
-Value v20 = call_method(mod, &*this_ptr, "parseExpression", (Value[]){}, 0);
-Value initializer = v20;
-Value v21 = create_array((Value[]){create_int(59)}, 1);
+Value v12 = create_array((Value[]){create_int(114), create_int(101), create_int(116), create_int(117), create_int(114), create_int(110)}, 6);
+Value v13 = call_method(mod, &*this_ptr, "accept", (Value[]){v12}, 1);
+if (v13.data.int_value != 0) {
+Value v14 = call_method(mod, &*this_ptr, "parseExpression", (Value[]){}, 0);
+Value expr = v14;
+Value v15 = create_array((Value[]){create_int(59)}, 1);
+Value v16 = call_method(mod, &*this_ptr, "expect", (Value[]){v15}, 1);
+v16;
+Value v17 = module_call(mod, "ReturnStatement", (Value[]){*object_get_field(*this_ptr, "filename"), *object_get_field(*this_ptr, "line"), expr}, 3);
+return v17;
+}
+else {
+Value v18 = create_array((Value[]){create_int(97), create_int(117), create_int(116), create_int(111)}, 4);
+Value v19 = call_method(mod, &*this_ptr, "accept", (Value[]){v18}, 1);
+if (v19.data.int_value != 0) {
+Value v20 = call_method(mod, &*this_ptr, "parseIdentifier", (Value[]){}, 0);
+Value name = v20;
+Value v21 = create_array((Value[]){create_int(61)}, 1);
 Value v22 = call_method(mod, &*this_ptr, "expect", (Value[]){v21}, 1);
 v22;
-Value v23 = module_call(mod, "VariableDecl", (Value[]){*object_get_field(*this_ptr, "filename"), *object_get_field(*this_ptr, "line"), name, initializer}, 4);
-return v23;
+Value v23 = call_method(mod, &*this_ptr, "parseExpression", (Value[]){}, 0);
+Value initializer = v23;
+Value v24 = create_array((Value[]){create_int(59)}, 1);
+Value v25 = call_method(mod, &*this_ptr, "expect", (Value[]){v24}, 1);
+v25;
+Value v26 = module_call(mod, "VariableDecl", (Value[]){*object_get_field(*this_ptr, "filename"), *object_get_field(*this_ptr, "line"), name, initializer}, 4);
+return v26;
 }
 else {
-Value v24 = call_method(mod, &*this_ptr, "parseExpression", (Value[]){}, 0);
-Value expr = v24;
-Value v25 = create_array((Value[]){create_int(61)}, 1);
-Value v26 = call_method(mod, &*this_ptr, "accept", (Value[]){v25}, 1);
-if (v26.data.int_value != 0) {
 Value v27 = call_method(mod, &*this_ptr, "parseExpression", (Value[]){}, 0);
-Value rhs = v27;
-Value v28 = create_array((Value[]){create_int(59)}, 1);
-Value v29 = call_method(mod, &*this_ptr, "expect", (Value[]){v28}, 1);
-v29;
-Value v30 = module_call(mod, "AssignmentStatement", (Value[]){*object_get_field(*this_ptr, "filename"), *object_get_field(*this_ptr, "line"), expr, rhs}, 4);
-return v30;
-}
-else {
+Value expr = v27;
+Value v28 = create_array((Value[]){create_int(61)}, 1);
+Value v29 = call_method(mod, &*this_ptr, "accept", (Value[]){v28}, 1);
+if (v29.data.int_value != 0) {
+Value v30 = call_method(mod, &*this_ptr, "parseExpression", (Value[]){}, 0);
+Value rhs = v30;
 Value v31 = create_array((Value[]){create_int(59)}, 1);
 Value v32 = call_method(mod, &*this_ptr, "expect", (Value[]){v31}, 1);
 v32;
-Value v33 = module_call(mod, "ExpressionStatement", (Value[]){*object_get_field(*this_ptr, "filename"), *object_get_field(*this_ptr, "line"), expr}, 3);
+Value v33 = module_call(mod, "AssignmentStatement", (Value[]){*object_get_field(*this_ptr, "filename"), *object_get_field(*this_ptr, "line"), expr, rhs}, 4);
 return v33;
+}
+else {
+Value v34 = create_array((Value[]){create_int(59)}, 1);
+Value v35 = call_method(mod, &*this_ptr, "expect", (Value[]){v34}, 1);
+v35;
+Value v36 = module_call(mod, "ExpressionStatement", (Value[]){*object_get_field(*this_ptr, "filename"), *object_get_field(*this_ptr, "line"), expr}, 3);
+return v36;
+}
 }
 }
 }
@@ -2511,6 +2541,44 @@ body = v13;
 }
 Value v14 = module_call(mod, "WhileStatement", (Value[]){*object_get_field(*this_ptr, "filename"), *object_get_field(*this_ptr, "line"), condition, body}, 4);
 return v14;
+    return create_null();
+}
+
+Value Parser_parseForInStatement(Module* mod, Value* this_ptr, Value* args, size_t arg_count) {
+    if (arg_count != 0) {
+        fprintf(stderr, "parseForInStatement expects 0 argument(s)\n");
+        exit(1);
+    }
+    Value* self = this_ptr->data.object.fields;
+    Value v1 = create_array((Value[]){create_int(40)}, 1);
+Value v2 = call_method(mod, &*this_ptr, "expect", (Value[]){v1}, 1);
+v2;
+Value v3 = call_method(mod, &*this_ptr, "parseIdentifier", (Value[]){}, 0);
+Value iteratorName = v3;
+Value v4 = create_array((Value[]){create_int(105), create_int(110)}, 2);
+Value v5 = call_method(mod, &*this_ptr, "expect", (Value[]){v4}, 1);
+v5;
+Value v6 = call_method(mod, &*this_ptr, "parseExpression", (Value[]){}, 0);
+Value arrayExpression = v6;
+Value v7 = create_array((Value[]){create_int(41)}, 1);
+Value v8 = call_method(mod, &*this_ptr, "expect", (Value[]){v7}, 1);
+v8;
+Value v9 = create_array((Value[]){}, 0);
+Value body = v9;
+Value v10 = create_array((Value[]){create_int(123)}, 1);
+Value v11 = call_method(mod, &*this_ptr, "expect", (Value[]){v10}, 1);
+v11;
+while (1) {
+Value v12 = create_array((Value[]){create_int(125)}, 1);
+Value v13 = call_method(mod, &*this_ptr, "accept", (Value[]){v12}, 1);
+Value v14 = call_method(mod, &v13, "not", (Value[]){}, 0);
+if (v14.data.int_value == 0) break;
+Value v15 = call_method(mod, &*this_ptr, "parseStatement", (Value[]){}, 0);
+Value v16 = call_method(mod, &body, "push", (Value[]){v15}, 1);
+body = v16;
+}
+Value v17 = module_call(mod, "ForInStatement", (Value[]){*object_get_field(*this_ptr, "filename"), *object_get_field(*this_ptr, "line"), iteratorName, arrayExpression, body}, 5);
+return v17;
     return create_null();
 }
 
@@ -3112,9 +3180,9 @@ return v26;
 
 ClassType Parser_type = {
     .base = {
-        .methods = (MethodFunc[]){Parser_init, Parser_accept, Parser_expect, Parser_skipWhitespace, Parser_skipComments, Parser_parseIdentifier, Parser_parse, Parser_parseFunctionDecl, Parser_parseClassDecl, Parser_parseStatement, Parser_parseIfStatement, Parser_parseWhileStatement, Parser_parseExpression, Parser_parseLogicalOrExpression, Parser_parseLogicalAndExpression, Parser_parseEqualityExpression, Parser_parseRelationalExpression, Parser_parseAdditiveExpression, Parser_parseMultiplicativeExpression, Parser_parseUnaryExpression, Parser_parseInstanceOf, Parser_parsePrimary, Parser_parseArrayLiteral, Parser_parseIntegerLiteral, Parser_parseStringLiteral},
-        .method_names = (char*[]){"init", "accept", "expect", "skipWhitespace", "skipComments", "parseIdentifier", "parse", "parseFunctionDecl", "parseClassDecl", "parseStatement", "parseIfStatement", "parseWhileStatement", "parseExpression", "parseLogicalOrExpression", "parseLogicalAndExpression", "parseEqualityExpression", "parseRelationalExpression", "parseAdditiveExpression", "parseMultiplicativeExpression", "parseUnaryExpression", "parseInstanceOf", "parsePrimary", "parseArrayLiteral", "parseIntegerLiteral", "parseStringLiteral"},
-        .method_count = 25
+        .methods = (MethodFunc[]){Parser_init, Parser_accept, Parser_expect, Parser_skipWhitespace, Parser_skipComments, Parser_parseIdentifier, Parser_parse, Parser_parseFunctionDecl, Parser_parseClassDecl, Parser_parseStatement, Parser_parseIfStatement, Parser_parseWhileStatement, Parser_parseForInStatement, Parser_parseExpression, Parser_parseLogicalOrExpression, Parser_parseLogicalAndExpression, Parser_parseEqualityExpression, Parser_parseRelationalExpression, Parser_parseAdditiveExpression, Parser_parseMultiplicativeExpression, Parser_parseUnaryExpression, Parser_parseInstanceOf, Parser_parsePrimary, Parser_parseArrayLiteral, Parser_parseIntegerLiteral, Parser_parseStringLiteral},
+        .method_names = (char*[]){"init", "accept", "expect", "skipWhitespace", "skipComments", "parseIdentifier", "parse", "parseFunctionDecl", "parseClassDecl", "parseStatement", "parseIfStatement", "parseWhileStatement", "parseForInStatement", "parseExpression", "parseLogicalOrExpression", "parseLogicalAndExpression", "parseEqualityExpression", "parseRelationalExpression", "parseAdditiveExpression", "parseMultiplicativeExpression", "parseUnaryExpression", "parseInstanceOf", "parsePrimary", "parseArrayLiteral", "parseIntegerLiteral", "parseStringLiteral"},
+        .method_count = 26
     },
     .name = "Parser",
     .parent = NULL,
@@ -3154,107 +3222,101 @@ Value output = v14;
 Value v15 = create_array((Value[]){create_int(77), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(42), create_int(32), create_int(109), create_int(111), create_int(100), create_int(32), create_int(61), create_int(32), create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(109), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(40), create_int(41), create_int(59), create_int(10)}, 31);
 Value moduleSetup = v15;
 Value v16 = create_int(0);
-Value i = v16;
-while (1) {
-Value v17 = call_method(mod, &*object_get_field(program, "nodes"), "length", (Value[]){}, 0);
-Value v18 = call_method(mod, &i, "smaller", (Value[]){v17}, 1);
-if (v18.data.int_value == 0) break;
-Value v19 = call_method(mod, &*object_get_field(program, "nodes"), "get", (Value[]){i}, 1);
-Value node = v19;
-Value v20 = instance_of(node, "FunctionDecl");
-Value v21 = call_method(mod, &v20, "isNull", (Value[]){}, 0);
-Value v22 = call_method(mod, &v21, "not", (Value[]){}, 0);
-if (v22.data.int_value != 0) {
+Value v17 = call_method(mod, &*object_get_field(program, "nodes"), "length", NULL, 0);
+while (v16.data.int_value < v17.data.int_value) {
+    Value node = call_method(mod, &*object_get_field(program, "nodes"), "get", &v16, 1);
+Value v18 = instance_of(node, "FunctionDecl");
+Value v19 = call_method(mod, &v18, "isNull", (Value[]){}, 0);
+Value v20 = call_method(mod, &v19, "not", (Value[]){}, 0);
+if (v20.data.int_value != 0) {
 Value emittedName = *object_get_field(node, "name");
-Value v23 = create_array((Value[]){create_int(109), create_int(97), create_int(105), create_int(110)}, 4);
-Value v24 = call_method(mod, &*object_get_field(node, "name"), "equal", (Value[]){v23}, 1);
-if (v24.data.int_value != 0) {
-Value v25 = create_array((Value[]){create_int(109), create_int(97), create_int(105), create_int(110), create_int(50)}, 5);
-emittedName = v25;
+Value v21 = create_array((Value[]){create_int(109), create_int(97), create_int(105), create_int(110)}, 4);
+Value v22 = call_method(mod, &*object_get_field(node, "name"), "equal", (Value[]){v21}, 1);
+if (v22.data.int_value != 0) {
+Value v23 = create_array((Value[]){create_int(109), create_int(97), create_int(105), create_int(110), create_int(50)}, 5);
+emittedName = v23;
 }
-Value v26 = create_array((Value[]){create_int(109), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(95), create_int(97), create_int(100), create_int(100), create_int(95), create_int(101), create_int(110), create_int(116), create_int(114), create_int(121), create_int(40), create_int(109), create_int(111), create_int(100), create_int(44), create_int(32), create_int(40), create_int(77), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(69), create_int(110), create_int(116), create_int(114), create_int(121), create_int(41), create_int(123)}, 36);
-Value v27 = call_method(mod, &moduleSetup, "concat", (Value[]){v26}, 1);
-Value v28 = create_array((Value[]){create_int(46), create_int(110), create_int(97), create_int(109), create_int(101), create_int(32), create_int(61), create_int(32), create_int(34)}, 9);
-Value v29 = call_method(mod, &v27, "concat", (Value[]){v28}, 1);
-Value v30 = call_method(mod, &v29, "concat", (Value[]){*object_get_field(node, "name")}, 1);
-Value v31 = create_array((Value[]){create_int(34), create_int(44), create_int(32)}, 3);
+Value v24 = create_array((Value[]){create_int(109), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(95), create_int(97), create_int(100), create_int(100), create_int(95), create_int(101), create_int(110), create_int(116), create_int(114), create_int(121), create_int(40), create_int(109), create_int(111), create_int(100), create_int(44), create_int(32), create_int(40), create_int(77), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(69), create_int(110), create_int(116), create_int(114), create_int(121), create_int(41), create_int(123)}, 36);
+Value v25 = call_method(mod, &moduleSetup, "concat", (Value[]){v24}, 1);
+Value v26 = create_array((Value[]){create_int(46), create_int(110), create_int(97), create_int(109), create_int(101), create_int(32), create_int(61), create_int(32), create_int(34)}, 9);
+Value v27 = call_method(mod, &v25, "concat", (Value[]){v26}, 1);
+Value v28 = call_method(mod, &v27, "concat", (Value[]){*object_get_field(node, "name")}, 1);
+Value v29 = create_array((Value[]){create_int(34), create_int(44), create_int(32)}, 3);
+Value v30 = call_method(mod, &v28, "concat", (Value[]){v29}, 1);
+Value v31 = create_array((Value[]){create_int(46), create_int(116), create_int(121), create_int(112), create_int(101), create_int(32), create_int(61), create_int(32), create_int(69), create_int(78), create_int(84), create_int(82), create_int(89), create_int(95), create_int(70), create_int(85), create_int(78), create_int(67), create_int(84), create_int(73), create_int(79), create_int(78), create_int(44), create_int(32)}, 24);
 Value v32 = call_method(mod, &v30, "concat", (Value[]){v31}, 1);
-Value v33 = create_array((Value[]){create_int(46), create_int(116), create_int(121), create_int(112), create_int(101), create_int(32), create_int(61), create_int(32), create_int(69), create_int(78), create_int(84), create_int(82), create_int(89), create_int(95), create_int(70), create_int(85), create_int(78), create_int(67), create_int(84), create_int(73), create_int(79), create_int(78), create_int(44), create_int(32)}, 24);
+Value v33 = create_array((Value[]){create_int(46), create_int(100), create_int(97), create_int(116), create_int(97), create_int(32), create_int(61), create_int(32), create_int(123), create_int(32), create_int(46), create_int(102), create_int(117), create_int(110), create_int(99), create_int(116), create_int(105), create_int(111), create_int(110), create_int(95), create_int(99), create_int(97), create_int(108), create_int(108), create_int(32), create_int(61), create_int(32)}, 27);
 Value v34 = call_method(mod, &v32, "concat", (Value[]){v33}, 1);
-Value v35 = create_array((Value[]){create_int(46), create_int(100), create_int(97), create_int(116), create_int(97), create_int(32), create_int(61), create_int(32), create_int(123), create_int(32), create_int(46), create_int(102), create_int(117), create_int(110), create_int(99), create_int(116), create_int(105), create_int(111), create_int(110), create_int(95), create_int(99), create_int(97), create_int(108), create_int(108), create_int(32), create_int(61), create_int(32)}, 27);
-Value v36 = call_method(mod, &v34, "concat", (Value[]){v35}, 1);
-Value v37 = call_method(mod, &v36, "concat", (Value[]){emittedName}, 1);
-Value v38 = create_array((Value[]){create_int(32), create_int(125)}, 2);
+Value v35 = call_method(mod, &v34, "concat", (Value[]){emittedName}, 1);
+Value v36 = create_array((Value[]){create_int(32), create_int(125)}, 2);
+Value v37 = call_method(mod, &v35, "concat", (Value[]){v36}, 1);
+Value v38 = create_array((Value[]){create_int(125), create_int(41), create_int(59), create_int(10)}, 4);
 Value v39 = call_method(mod, &v37, "concat", (Value[]){v38}, 1);
-Value v40 = create_array((Value[]){create_int(125), create_int(41), create_int(59), create_int(10)}, 4);
-Value v41 = call_method(mod, &v39, "concat", (Value[]){v40}, 1);
-moduleSetup = v41;
+moduleSetup = v39;
 }
 else {
-Value v42 = instance_of(node, "ClassDecl");
-Value v43 = call_method(mod, &v42, "isNull", (Value[]){}, 0);
-Value v44 = call_method(mod, &v43, "not", (Value[]){}, 0);
-if (v44.data.int_value != 0) {
-Value v45 = create_array((Value[]){create_int(109), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(95), create_int(97), create_int(100), create_int(100), create_int(95), create_int(101), create_int(110), create_int(116), create_int(114), create_int(121), create_int(40), create_int(109), create_int(111), create_int(100), create_int(44), create_int(32), create_int(40), create_int(77), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(69), create_int(110), create_int(116), create_int(114), create_int(121), create_int(41), create_int(123)}, 36);
-Value v46 = call_method(mod, &moduleSetup, "concat", (Value[]){v45}, 1);
-Value v47 = create_array((Value[]){create_int(46), create_int(110), create_int(97), create_int(109), create_int(101), create_int(32), create_int(61), create_int(32), create_int(34)}, 9);
-Value v48 = call_method(mod, &v46, "concat", (Value[]){v47}, 1);
-Value v49 = call_method(mod, &v48, "concat", (Value[]){*object_get_field(node, "name")}, 1);
-Value v50 = create_array((Value[]){create_int(34), create_int(44)}, 2);
+Value v40 = instance_of(node, "ClassDecl");
+Value v41 = call_method(mod, &v40, "isNull", (Value[]){}, 0);
+Value v42 = call_method(mod, &v41, "not", (Value[]){}, 0);
+if (v42.data.int_value != 0) {
+Value v43 = create_array((Value[]){create_int(109), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(95), create_int(97), create_int(100), create_int(100), create_int(95), create_int(101), create_int(110), create_int(116), create_int(114), create_int(121), create_int(40), create_int(109), create_int(111), create_int(100), create_int(44), create_int(32), create_int(40), create_int(77), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(69), create_int(110), create_int(116), create_int(114), create_int(121), create_int(41), create_int(123)}, 36);
+Value v44 = call_method(mod, &moduleSetup, "concat", (Value[]){v43}, 1);
+Value v45 = create_array((Value[]){create_int(46), create_int(110), create_int(97), create_int(109), create_int(101), create_int(32), create_int(61), create_int(32), create_int(34)}, 9);
+Value v46 = call_method(mod, &v44, "concat", (Value[]){v45}, 1);
+Value v47 = call_method(mod, &v46, "concat", (Value[]){*object_get_field(node, "name")}, 1);
+Value v48 = create_array((Value[]){create_int(34), create_int(44)}, 2);
+Value v49 = call_method(mod, &v47, "concat", (Value[]){v48}, 1);
+Value v50 = create_array((Value[]){create_int(46), create_int(116), create_int(121), create_int(112), create_int(101), create_int(32), create_int(61), create_int(32), create_int(69), create_int(78), create_int(84), create_int(82), create_int(89), create_int(95), create_int(67), create_int(76), create_int(65), create_int(83), create_int(83), create_int(44), create_int(32)}, 21);
 Value v51 = call_method(mod, &v49, "concat", (Value[]){v50}, 1);
-Value v52 = create_array((Value[]){create_int(46), create_int(116), create_int(121), create_int(112), create_int(101), create_int(32), create_int(61), create_int(32), create_int(69), create_int(78), create_int(84), create_int(82), create_int(89), create_int(95), create_int(67), create_int(76), create_int(65), create_int(83), create_int(83), create_int(44), create_int(32)}, 21);
+Value v52 = create_array((Value[]){create_int(46), create_int(100), create_int(97), create_int(116), create_int(97), create_int(32), create_int(61), create_int(32), create_int(123), create_int(32), create_int(46), create_int(99), create_int(108), create_int(97), create_int(115), create_int(115), create_int(95), create_int(116), create_int(121), create_int(112), create_int(101), create_int(32), create_int(61), create_int(32), create_int(38)}, 25);
 Value v53 = call_method(mod, &v51, "concat", (Value[]){v52}, 1);
-Value v54 = create_array((Value[]){create_int(46), create_int(100), create_int(97), create_int(116), create_int(97), create_int(32), create_int(61), create_int(32), create_int(123), create_int(32), create_int(46), create_int(99), create_int(108), create_int(97), create_int(115), create_int(115), create_int(95), create_int(116), create_int(121), create_int(112), create_int(101), create_int(32), create_int(61), create_int(32), create_int(38)}, 25);
-Value v55 = call_method(mod, &v53, "concat", (Value[]){v54}, 1);
-Value v56 = call_method(mod, &v55, "concat", (Value[]){*object_get_field(node, "name")}, 1);
-Value v57 = create_array((Value[]){create_int(95), create_int(116), create_int(121), create_int(112), create_int(101), create_int(32), create_int(125)}, 7);
+Value v54 = call_method(mod, &v53, "concat", (Value[]){*object_get_field(node, "name")}, 1);
+Value v55 = create_array((Value[]){create_int(95), create_int(116), create_int(121), create_int(112), create_int(101), create_int(32), create_int(125)}, 7);
+Value v56 = call_method(mod, &v54, "concat", (Value[]){v55}, 1);
+Value v57 = create_array((Value[]){create_int(125), create_int(41), create_int(59), create_int(10)}, 4);
 Value v58 = call_method(mod, &v56, "concat", (Value[]){v57}, 1);
-Value v59 = create_array((Value[]){create_int(125), create_int(41), create_int(59), create_int(10)}, 4);
-Value v60 = call_method(mod, &v58, "concat", (Value[]){v59}, 1);
-moduleSetup = v60;
+moduleSetup = v58;
 }
 }
-Value v61 = create_int(1);
-Value v62 = call_method(mod, &i, "add", (Value[]){v61}, 1);
-i = v62;
+    v16.data.int_value++;
 }
-Value v63 = create_array((Value[]){create_int(105), create_int(110), create_int(116), create_int(32), create_int(109), create_int(97), create_int(105), create_int(110), create_int(40), create_int(105), create_int(110), create_int(116), create_int(32), create_int(97), create_int(114), create_int(103), create_int(99), create_int(44), create_int(32), create_int(99), create_int(104), create_int(97), create_int(114), create_int(42), create_int(42), create_int(32), create_int(97), create_int(114), create_int(103), create_int(118), create_int(41), create_int(32), create_int(123), create_int(10)}, 34);
-Value v64 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32)}, 4);
-Value v65 = call_method(mod, &v63, "concat", (Value[]){v64}, 1);
-Value v66 = call_method(mod, &v65, "concat", (Value[]){moduleSetup}, 1);
-Value v67 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32), create_int(97), create_int(114), create_int(103), create_int(115), create_int(32), create_int(61), create_int(32), create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(97), create_int(114), create_int(114), create_int(97), create_int(121), create_int(40), create_int(78), create_int(85), create_int(76), create_int(76), create_int(44), create_int(32), create_int(97), create_int(114), create_int(103), create_int(99), create_int(41), create_int(59), create_int(10)}, 43);
+Value v59 = create_array((Value[]){create_int(105), create_int(110), create_int(116), create_int(32), create_int(109), create_int(97), create_int(105), create_int(110), create_int(40), create_int(105), create_int(110), create_int(116), create_int(32), create_int(97), create_int(114), create_int(103), create_int(99), create_int(44), create_int(32), create_int(99), create_int(104), create_int(97), create_int(114), create_int(42), create_int(42), create_int(32), create_int(97), create_int(114), create_int(103), create_int(118), create_int(41), create_int(32), create_int(123), create_int(10)}, 34);
+Value v60 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32)}, 4);
+Value v61 = call_method(mod, &v59, "concat", (Value[]){v60}, 1);
+Value v62 = call_method(mod, &v61, "concat", (Value[]){moduleSetup}, 1);
+Value v63 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32), create_int(97), create_int(114), create_int(103), create_int(115), create_int(32), create_int(61), create_int(32), create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(97), create_int(114), create_int(114), create_int(97), create_int(121), create_int(40), create_int(78), create_int(85), create_int(76), create_int(76), create_int(44), create_int(32), create_int(97), create_int(114), create_int(103), create_int(99), create_int(41), create_int(59), create_int(10)}, 43);
+Value v64 = call_method(mod, &v62, "concat", (Value[]){v63}, 1);
+Value v65 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(102), create_int(111), create_int(114), create_int(32), create_int(40), create_int(105), create_int(110), create_int(116), create_int(32), create_int(105), create_int(32), create_int(61), create_int(32), create_int(48), create_int(59), create_int(32), create_int(105), create_int(32), create_int(60), create_int(32), create_int(97), create_int(114), create_int(103), create_int(99), create_int(59), create_int(32), create_int(105), create_int(43), create_int(43), create_int(41), create_int(32), create_int(123), create_int(10)}, 37);
+Value v66 = call_method(mod, &v64, "concat", (Value[]){v65}, 1);
+Value v67 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32), create_int(97), create_int(114), create_int(103), create_int(32), create_int(61), create_int(32), create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(97), create_int(114), create_int(114), create_int(97), create_int(121), create_int(40), create_int(78), create_int(85), create_int(76), create_int(76), create_int(44), create_int(32), create_int(115), create_int(116), create_int(114), create_int(108), create_int(101), create_int(110), create_int(40), create_int(97), create_int(114), create_int(103), create_int(118), create_int(91), create_int(105), create_int(93), create_int(41), create_int(41), create_int(59), create_int(10)}, 57);
 Value v68 = call_method(mod, &v66, "concat", (Value[]){v67}, 1);
-Value v69 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(102), create_int(111), create_int(114), create_int(32), create_int(40), create_int(105), create_int(110), create_int(116), create_int(32), create_int(105), create_int(32), create_int(61), create_int(32), create_int(48), create_int(59), create_int(32), create_int(105), create_int(32), create_int(60), create_int(32), create_int(97), create_int(114), create_int(103), create_int(99), create_int(59), create_int(32), create_int(105), create_int(43), create_int(43), create_int(41), create_int(32), create_int(123), create_int(10)}, 37);
+Value v69 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(102), create_int(111), create_int(114), create_int(32), create_int(40), create_int(105), create_int(110), create_int(116), create_int(32), create_int(106), create_int(32), create_int(61), create_int(32), create_int(48), create_int(59), create_int(32), create_int(106), create_int(32), create_int(60), create_int(32), create_int(115), create_int(116), create_int(114), create_int(108), create_int(101), create_int(110), create_int(40), create_int(97), create_int(114), create_int(103), create_int(118), create_int(91), create_int(105), create_int(93), create_int(41), create_int(59), create_int(32), create_int(106), create_int(43), create_int(43), create_int(41), create_int(32), create_int(123), create_int(10)}, 52);
 Value v70 = call_method(mod, &v68, "concat", (Value[]){v69}, 1);
-Value v71 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(86), create_int(97), create_int(108), create_int(117), create_int(101), create_int(32), create_int(97), create_int(114), create_int(103), create_int(32), create_int(61), create_int(32), create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(97), create_int(114), create_int(114), create_int(97), create_int(121), create_int(40), create_int(78), create_int(85), create_int(76), create_int(76), create_int(44), create_int(32), create_int(115), create_int(116), create_int(114), create_int(108), create_int(101), create_int(110), create_int(40), create_int(97), create_int(114), create_int(103), create_int(118), create_int(91), create_int(105), create_int(93), create_int(41), create_int(41), create_int(59), create_int(10)}, 57);
+Value v71 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(97), create_int(114), create_int(114), create_int(97), create_int(121), create_int(95), create_int(115), create_int(101), create_int(116), create_int(40), create_int(97), create_int(114), create_int(103), create_int(44), create_int(32), create_int(106), create_int(44), create_int(32), create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(105), create_int(110), create_int(116), create_int(40), create_int(97), create_int(114), create_int(103), create_int(118), create_int(91), create_int(105), create_int(93), create_int(91), create_int(106), create_int(93), create_int(41), create_int(41), create_int(59), create_int(10)}, 55);
 Value v72 = call_method(mod, &v70, "concat", (Value[]){v71}, 1);
-Value v73 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(102), create_int(111), create_int(114), create_int(32), create_int(40), create_int(105), create_int(110), create_int(116), create_int(32), create_int(106), create_int(32), create_int(61), create_int(32), create_int(48), create_int(59), create_int(32), create_int(106), create_int(32), create_int(60), create_int(32), create_int(115), create_int(116), create_int(114), create_int(108), create_int(101), create_int(110), create_int(40), create_int(97), create_int(114), create_int(103), create_int(118), create_int(91), create_int(105), create_int(93), create_int(41), create_int(59), create_int(32), create_int(106), create_int(43), create_int(43), create_int(41), create_int(32), create_int(123), create_int(10)}, 52);
+Value v73 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(125), create_int(10)}, 10);
 Value v74 = call_method(mod, &v72, "concat", (Value[]){v73}, 1);
-Value v75 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(97), create_int(114), create_int(114), create_int(97), create_int(121), create_int(95), create_int(115), create_int(101), create_int(116), create_int(40), create_int(97), create_int(114), create_int(103), create_int(44), create_int(32), create_int(106), create_int(44), create_int(32), create_int(99), create_int(114), create_int(101), create_int(97), create_int(116), create_int(101), create_int(95), create_int(105), create_int(110), create_int(116), create_int(40), create_int(97), create_int(114), create_int(103), create_int(118), create_int(91), create_int(105), create_int(93), create_int(91), create_int(106), create_int(93), create_int(41), create_int(41), create_int(59), create_int(10)}, 55);
+Value v75 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(97), create_int(114), create_int(114), create_int(97), create_int(121), create_int(95), create_int(115), create_int(101), create_int(116), create_int(40), create_int(97), create_int(114), create_int(103), create_int(115), create_int(44), create_int(32), create_int(105), create_int(44), create_int(32), create_int(97), create_int(114), create_int(103), create_int(41), create_int(59), create_int(10)}, 33);
 Value v76 = call_method(mod, &v74, "concat", (Value[]){v75}, 1);
-Value v77 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(125), create_int(10)}, 10);
+Value v77 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(125), create_int(10)}, 6);
 Value v78 = call_method(mod, &v76, "concat", (Value[]){v77}, 1);
-Value v79 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(32), create_int(97), create_int(114), create_int(114), create_int(97), create_int(121), create_int(95), create_int(115), create_int(101), create_int(116), create_int(40), create_int(97), create_int(114), create_int(103), create_int(115), create_int(44), create_int(32), create_int(105), create_int(44), create_int(32), create_int(97), create_int(114), create_int(103), create_int(41), create_int(59), create_int(10)}, 33);
+Value v79 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(109), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(95), create_int(99), create_int(97), create_int(108), create_int(108), create_int(40), create_int(109), create_int(111), create_int(100), create_int(44), create_int(32), create_int(34), create_int(109), create_int(97), create_int(105), create_int(110), create_int(34), create_int(44), create_int(32), create_int(38), create_int(97), create_int(114), create_int(103), create_int(115), create_int(44), create_int(32), create_int(49), create_int(41), create_int(59), create_int(10)}, 40);
 Value v80 = call_method(mod, &v78, "concat", (Value[]){v79}, 1);
-Value v81 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(125), create_int(10)}, 6);
+Value v81 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(114), create_int(101), create_int(116), create_int(117), create_int(114), create_int(110), create_int(32), create_int(48), create_int(59), create_int(10)}, 14);
 Value v82 = call_method(mod, &v80, "concat", (Value[]){v81}, 1);
-Value v83 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(109), create_int(111), create_int(100), create_int(117), create_int(108), create_int(101), create_int(95), create_int(99), create_int(97), create_int(108), create_int(108), create_int(40), create_int(109), create_int(111), create_int(100), create_int(44), create_int(32), create_int(34), create_int(109), create_int(97), create_int(105), create_int(110), create_int(34), create_int(44), create_int(32), create_int(38), create_int(97), create_int(114), create_int(103), create_int(115), create_int(44), create_int(32), create_int(49), create_int(41), create_int(59), create_int(10)}, 40);
+Value v83 = create_array((Value[]){create_int(125)}, 1);
 Value v84 = call_method(mod, &v82, "concat", (Value[]){v83}, 1);
-Value v85 = create_array((Value[]){create_int(32), create_int(32), create_int(32), create_int(32), create_int(114), create_int(101), create_int(116), create_int(117), create_int(114), create_int(110), create_int(32), create_int(48), create_int(59), create_int(10)}, 14);
-Value v86 = call_method(mod, &v84, "concat", (Value[]){v85}, 1);
-Value v87 = create_array((Value[]){create_int(125)}, 1);
+Value mainFunction = v84;
+Value v85 = create_array((Value[]){create_int(35), create_int(105), create_int(110), create_int(99), create_int(108), create_int(117), create_int(100), create_int(101), create_int(32), create_int(34), create_int(114), create_int(117), create_int(110), create_int(116), create_int(105), create_int(109), create_int(101), create_int(46), create_int(104), create_int(34), create_int(10), create_int(10)}, 22);
+Value v86 = call_method(mod, &v85, "concat", (Value[]){output}, 1);
+Value v87 = create_array((Value[]){create_int(10)}, 1);
 Value v88 = call_method(mod, &v86, "concat", (Value[]){v87}, 1);
-Value mainFunction = v88;
-Value v89 = create_array((Value[]){create_int(35), create_int(105), create_int(110), create_int(99), create_int(108), create_int(117), create_int(100), create_int(101), create_int(32), create_int(34), create_int(114), create_int(117), create_int(110), create_int(116), create_int(105), create_int(109), create_int(101), create_int(46), create_int(104), create_int(34), create_int(10), create_int(10)}, 22);
-Value v90 = call_method(mod, &v89, "concat", (Value[]){output}, 1);
-Value v91 = create_array((Value[]){create_int(10)}, 1);
-Value v92 = call_method(mod, &v90, "concat", (Value[]){v91}, 1);
-Value v93 = call_method(mod, &v92, "concat", (Value[]){mainFunction}, 1);
-output = v93;
-Value v94 = module_call(mod, "writeFile", (Value[]){outputFile, output}, 2);
-v94;
-Value v95 = create_int(0);
-return v95;
+Value v89 = call_method(mod, &v88, "concat", (Value[]){mainFunction}, 1);
+output = v89;
+Value v90 = module_call(mod, "writeFile", (Value[]){outputFile, output}, 2);
+v90;
+Value v91 = create_int(0);
+return v91;
     return create_null();
 }
 
@@ -3273,6 +3335,7 @@ module_add_entry(mod, (ModuleEntry){.name = "MethodCall",.type = ENTRY_CLASS, .d
 module_add_entry(mod, (ModuleEntry){.name = "FunctionCall",.type = ENTRY_CLASS, .data = { .class_type = &FunctionCall_type }});
 module_add_entry(mod, (ModuleEntry){.name = "IfStatement",.type = ENTRY_CLASS, .data = { .class_type = &IfStatement_type }});
 module_add_entry(mod, (ModuleEntry){.name = "WhileStatement",.type = ENTRY_CLASS, .data = { .class_type = &WhileStatement_type }});
+module_add_entry(mod, (ModuleEntry){.name = "ForInStatement",.type = ENTRY_CLASS, .data = { .class_type = &ForInStatement_type }});
 module_add_entry(mod, (ModuleEntry){.name = "AssignmentStatement",.type = ENTRY_CLASS, .data = { .class_type = &AssignmentStatement_type }});
 module_add_entry(mod, (ModuleEntry){.name = "ReturnStatement",.type = ENTRY_CLASS, .data = { .class_type = &ReturnStatement_type }});
 module_add_entry(mod, (ModuleEntry){.name = "ExpressionStatement",.type = ENTRY_CLASS, .data = { .class_type = &ExpressionStatement_type }});

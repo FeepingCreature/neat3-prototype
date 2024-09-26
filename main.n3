@@ -16,7 +16,7 @@ Simplifications for the bootstrap, 0.1 version of the language:
 - mutable variables, everything is mutable
 - no typechecks, all done as asserts in the runtime
 - runtime types: class, array, int.
-- blocks, if statements, while statements (maybe array-element loops, as a treat)
+- blocks, if statements, while statements, for-in loops
 - no GC/RC, leak everything
 - no error propagation, every error kills the program right there (assert runtime function)
 - no operands at all, builtin type functions only (.add, .sub, .concat etc.), this also handles string ops
@@ -94,22 +94,18 @@ class Program {
 
     function compile() {
         auto compiledNodes = [];
-        auto i = 0;
-        while (i < this.nodes.length()) {
-            compiledNodes = compiledNodes.push(this.nodes.get(i).compile(this));
-            i = i + 1;
+        for (node in this.nodes) {
+            compiledNodes = compiledNodes.push(node.compile(this));
         }
         return compiledNodes.join("\n");
     }
 
     function findClass(name) {
-        auto i = 0;
-        while (i < this.nodes.length()) {
-            auto classDecl = this.nodes.get(i).instanceOf(ClassDecl);
+        for (node in this.nodes) {
+            auto classDecl = node.instanceOf(ClassDecl);
             if (!classDecl.isNull() && classDecl.name == name) {
                 return classDecl;
             }
-            i = i + 1;
         }
         return null;
     }
@@ -131,10 +127,8 @@ class FunctionDecl : TopLevelASTNode {
     function compile(prog) {
         auto bodyContext = CodegenContext(null);
         auto compiledBody = [];
-        auto i = 0;
-        while (i < this.body.length()) {
-            compiledBody = compiledBody.push(this.body.get(i).compile(bodyContext));
-            i = i + 1;
+        for (stmt in this.body) {
+            compiledBody = compiledBody.push(stmt.compile(bodyContext));
         }
 
         auto functionBody = bodyContext.getCurrentCode();
@@ -157,8 +151,8 @@ class FunctionDecl : TopLevelASTNode {
     function compileParamAssignments() {
         auto assignments = [];
         auto i = 0;
-        while (i < this.params.length()) {
-            assignments = assignments.push("    Value " ~ this.params.get(i) ~ " = args[" ~ i.toString() ~ "];");
+        for (param in this.params) {
+            assignments = assignments.push("    Value " ~ param ~ " = args[" ~ i.toString() ~ "];");
             i = i + 1;
         }
         return assignments.join("\n");
@@ -183,13 +177,11 @@ class VTable {
     }
 
     function addEntry(name, function_) {
-        auto i = 0;
-        while (i < this.entries.length()) {
-            if (this.entries.get(i).name == name) {
-                this.entries.get(i).function = function_;
+        for (entry in this.entries) {
+            if (entry.name == name) {
+                entry.function = function_;
                 return 0;
             }
-            i = i + 1;
         }
         // If not found, add as a new entry
         this.entries = this.entries.push(VTableEntry(name, function_));
@@ -214,10 +206,8 @@ class ClassDecl : TopLevelASTNode {
 
     function compile(prog) {
         auto compiledMethods = [];
-        auto i = 0;
-        while (i < this.methods.length()) {
-            compiledMethods = compiledMethods.push(this.compileMethod(this.methods.get(i)));
-            i = i + 1;
+        for (method in this.methods) {
+            compiledMethods = compiledMethods.push(this.compileMethod(method));
         }
 
         return compiledMethods.join("\n") ~ "\n" ~
@@ -233,11 +223,8 @@ class ClassDecl : TopLevelASTNode {
             vtable = parentClass.buildVTable(prog);
         }
 
-        auto i = 0;
-        while (i < this.methods.length()) {
-            auto method = this.methods.get(i);
+        for (method in this.methods) {
             vtable.addEntry(method.name, this.name ~ "_" ~ method.name);
-            i = i + 1;
         }
 
         return vtable;
@@ -246,10 +233,8 @@ class ClassDecl : TopLevelASTNode {
     function compileMethod(method) {
         auto context = CodegenContext(null);
         auto compiledBody = [];
-        auto i = 0;
-        while (i < method.body.length()) {
-            compiledBody = compiledBody.push(method.body.get(i).compile(context));
-            i = i + 1;
+        for (stmt in method.body) {
+            compiledBody = compiledBody.push(stmt.compile(context));
         }
 
         auto functionBody = context.getCurrentCode();
@@ -270,8 +255,8 @@ class ClassDecl : TopLevelASTNode {
     function compileMethodParamAssignments(method) {
         auto assignments = [];
         auto i = 0;
-        while (i < method.params.length()) {
-            assignments = assignments.push("    Value " ~ method.params.get(i) ~ " = args[" ~ i.toString() ~ "];");
+        for (param in method.params) {
+            assignments = assignments.push("    Value " ~ param ~ " = args[" ~ i.toString() ~ "];");
             i = i + 1;
         }
         return assignments.join("\n");
@@ -281,10 +266,8 @@ class ClassDecl : TopLevelASTNode {
         auto fieldNameInitializers = [];
         auto current = this;
         while (!current.isNull()) {
-            auto i = 0;
-            while (i < current.fields.length()) {
-                fieldNameInitializers = fieldNameInitializers.push("\"" ~ current.fields.get(i) ~ "\"");
-                i = i + 1;
+            for (field in current.fields) {
+                fieldNameInitializers = fieldNameInitializers.push("\"" ~ field ~ "\"");
             }
             if (current.parent == "") {
                 current = null;
@@ -296,12 +279,9 @@ class ClassDecl : TopLevelASTNode {
         auto vtable = this.buildVTable(prog);
         auto methodNameInitializers = [];
         auto methodFuncInitializers = [];
-        auto i = 0;
-        while (i < vtable.entries.length()) {
-            auto entry = vtable.entries.get(i);
+        for (entry in vtable.entries) {
             methodNameInitializers = methodNameInitializers.push("\"" ~ entry.name ~ "\"");
             methodFuncInitializers = methodFuncInitializers.push(entry.function);
-            i = i + 1;
         }
 
         auto parentStr = "";
@@ -359,10 +339,8 @@ class MethodCall : ASTFunctionNode {
     function compile(context) {
         auto objectVar = this.object.compile(context);
         auto compiledArgs = [];
-        auto i = 0;
-        while (i < this.args.length()) {
-            compiledArgs = compiledArgs.push(this.args.get(i).compile(context));
-            i = i + 1;
+        for (arg in this.args) {
+            compiledArgs = compiledArgs.push(arg.compile(context));
         }
         auto resultVar = context.newVariable();
         context.emitLine("Value " ~ resultVar ~ " = call_method(mod, &" ~ objectVar ~ ", \"" ~ this.method ~ "\", (Value[]){" ~ compiledArgs.join(", ") ~ "}, " ~ this.args.length().toString() ~ ");");
@@ -383,10 +361,8 @@ class FunctionCall : ASTFunctionNode {
 
     function compile(context) {
         auto compiledArgs = [];
-        auto i = 0;
-        while (i < this.args.length()) {
-            compiledArgs = compiledArgs.push(this.args.get(i).compile(context));
-            i = i + 1;
+        for (arg in this.args) {
+            compiledArgs = compiledArgs.push(arg.compile(context));
         }
         auto resultVar = context.newVariable();
         context.emitLine("Value " ~ resultVar ~ " = module_call(mod, \"" ~ this.name ~ "\", (Value[]){" ~ compiledArgs.join(", ") ~ "}, " ~ this.args.length().toString() ~ ");");
@@ -412,10 +388,8 @@ class IfStatement : ASTFunctionNode {
         context.emitLine("if (" ~ condVar ~ ".data.int_value != 0) {");
 
         auto thenContext = CodegenContext(context);
-        auto i = 0;
-        while (i < this.thenBody.length()) {
-            this.thenBody.get(i).compile(thenContext);
-            i = i + 1;
+        for (stmt in this.thenBody) {
+            stmt.compile(thenContext);
         }
         context.emitLine(thenContext.getCurrentCode());
         context.emitLine("}");
@@ -423,10 +397,8 @@ class IfStatement : ASTFunctionNode {
         if (this.elseBody.length() > 0) {
             context.emitLine("else {");
             auto elseContext = CodegenContext(context);
-            i = 0;
-            while (i < this.elseBody.length()) {
-                this.elseBody.get(i).compile(elseContext);
-                i = i + 1;
+            for (stmt in this.elseBody) {
+                stmt.compile(elseContext);
             }
             context.emitLine(elseContext.getCurrentCode());
             context.emitLine("}");
@@ -453,12 +425,46 @@ class WhileStatement : ASTFunctionNode {
         context.emitLine("if (" ~ condVar ~ ".data.int_value == 0) break;");
 
         auto bodyContext = CodegenContext(context);
-        auto i = 0;
-        while (i < this.body.length()) {
-            this.body.get(i).compile(bodyContext);
-            i = i + 1;
+        for (stmt in this.body) {
+            stmt.compile(bodyContext);
         }
         context.emitLine(bodyContext.getCurrentCode());
+        context.emitLine("}");
+
+        return "";
+    }
+}
+
+class ForInStatement : ASTFunctionNode {
+    auto iteratorName;
+    auto arrayExpression;
+    auto body;
+
+    function init(filename, line, iteratorName, arrayExpression, body) {
+        this.filename = filename;
+        this.line = line;
+        this.iteratorName = iteratorName;
+        this.arrayExpression = arrayExpression;
+        this.body = body;
+    }
+
+    function compile(context) {
+        auto arrayVar = this.arrayExpression.compile(context);
+        auto indexVar = context.newVariable();
+        auto lengthVar = context.newVariable();
+
+        context.emitLine("Value " ~ indexVar ~ " = create_int(0);");
+        context.emitLine("Value " ~ lengthVar ~ " = call_method(mod, &" ~ arrayVar ~ ", \"length\", NULL, 0);");
+        context.emitLine("while (" ~ indexVar ~ ".data.int_value < " ~ lengthVar ~ ".data.int_value) {");
+        context.emitLine("    Value " ~ this.iteratorName ~ " = call_method(mod, &" ~ arrayVar ~ ", \"get\", &" ~ indexVar ~ ", 1);");
+
+        auto bodyContext = CodegenContext(context);
+        for (stmt in this.body) {
+            stmt.compile(bodyContext);
+        }
+        context.emitLine(bodyContext.getCurrentCode());
+
+        context.emitLine("    " ~ indexVar ~ ".data.int_value++;");
         context.emitLine("}");
 
         return "";
@@ -565,10 +571,8 @@ class StringLiteral : ASTFunctionNode {
 
     function compile(context) {
         auto values = [];
-        auto i = 0;
-        while (i < this.value.length()) {
-            values = values.push("create_int(" ~ this.value.get(i).toString() ~ ")");
-            i = i + 1;
+        for (char_ in this.value) {
+            values = values.push("create_int(" ~ char_.toString() ~ ")");
         }
         auto resultVar = context.newVariable();
         context.emitLine("Value " ~ resultVar ~ " = create_array((Value[]){" ~ values.join(", ") ~ "}, " ~ this.value.length().toString() ~ ");");
@@ -600,10 +604,8 @@ class ArrayLiteral : ASTFunctionNode {
 
     function compile(context) {
         auto compiledElements = [];
-        auto i = 0;
-        while (i < this.elements.length()) {
-            compiledElements = compiledElements.push(this.elements.get(i).compile(context));
-            i = i + 1;
+        for (element in this.elements) {
+            compiledElements = compiledElements.push(element.compile(context));
         }
         auto resultVar = context.newVariable();
         context.emitLine("Value " ~ resultVar ~ " = create_array((Value[]){" ~ compiledElements.join(", ") ~ "}, " ~ this.elements.length().toString() ~ ");");
@@ -858,6 +860,8 @@ class Parser {
             return this.parseIfStatement();
         } else if (this.accept("while")) {
             return this.parseWhileStatement();
+        } else if (this.accept("for")) {
+            return this.parseForInStatement();
         } else if (this.accept("return")) {
             auto expr = this.parseExpression();
             this.expect(";");
@@ -919,6 +923,22 @@ class Parser {
         }
 
         return WhileStatement(this.filename, this.line, condition, body);
+    }
+
+    function parseForInStatement() {
+        this.expect("(");
+        auto iteratorName = this.parseIdentifier();
+        this.expect("in");
+        auto arrayExpression = this.parseExpression();
+        this.expect(")");
+
+        auto body = [];
+        this.expect("{");
+        while (!this.accept("}")) {
+            body = body.push(this.parseStatement());
+        }
+
+        return ForInStatement(this.filename, this.line, iteratorName, arrayExpression, body);
     }
 
     function parseExpression() {
@@ -1001,7 +1021,8 @@ class Parser {
                 left = MethodCall(this.filename, this.line, left, "sub", [right]);
             } else if (this.accept("~")) {
                 auto right = this.parseMultiplicativeExpression();
-                left = MethodCall(this.filename, this.line, left, "concat", [right]); } else {
+                left = MethodCall(this.filename, this.line, left, "concat", [right]);
+            } else {
                 break;
             }
         }
@@ -1169,9 +1190,7 @@ function main(args_) {
     auto output = program.compile();
 
     auto moduleSetup = "Module* mod = create_module();\n";
-    auto i = 0;
-    while (i < program.nodes.length()) {
-        auto node = program.nodes.get(i);
+    for (node in program.nodes) {
         if (!node.instanceOf(FunctionDecl).isNull()) {
             auto emittedName = node.name;
             if (node.name == "main") {
@@ -1189,7 +1208,6 @@ function main(args_) {
                 ".data = { .class_type = &" ~ node.name ~ "_type }" ~
             "});\n";
         }
-        i = i + 1;
     }
 
     auto mainFunction = "int main(int argc, char** argv) {\n" ~
