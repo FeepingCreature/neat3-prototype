@@ -5,8 +5,8 @@ function fibonacci(n) {
     return fibonacci(n.sub(1)).add(fibonacci(n.sub(2)));
 }
 
-function main() {
-    auto i = 0;
+function main(args_) {
+    auto i = 1;
     while (i.smaller(10)) {
         print(fibonacci(i));
         i = i.add(1);

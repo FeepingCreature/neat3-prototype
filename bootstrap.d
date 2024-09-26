@@ -122,9 +122,11 @@ class ClassDecl : ASTNode {
         }
 
         string fieldDeclarations = fields.map!(f => "\"" ~ f ~ "\": Value(0)").join(", ");
-        string parentDeclaration = parent ? "mod.get!ClassEntry(\"" ~ parent ~ "\").classType" : "null";
+        string parentDeclaration = parent ? "(cast(ClassEntry)mod.get(\"" ~ parent ~ "\")).classType" : "null";
+        string fieldLiteral = "[" ~ fieldDeclarations ~ "]";
+        if (fieldLiteral == "[]") fieldLiteral = "(Value[string]).init";
 
-        return "auto " ~ name ~ "Type = new ClassType(" ~ parentDeclaration ~ ", [" ~ fieldDeclarations ~ "]);\n" ~
+        return "auto " ~ name ~ "Type = new ClassType(\"" ~ name ~ "\", " ~ parentDeclaration ~ ", " ~ fieldLiteral ~ ");\n" ~
                compiledMethods.join("\n") ~
                "mod.add(new ClassEntry(\"" ~ name ~ "\", " ~ name ~ "Type));\n";
     }
@@ -333,7 +335,7 @@ class StringLiteral : ASTNode {
     }
 
     override string compile() {
-        return "Value(" ~ value.map!(c => to!string(cast(int)c)).join(", ") ~ ")";
+        return "Value([" ~ value.map!(c => "Value(" ~ to!string(cast(int)c) ~ ")").join(", ") ~ "])";
     }
 }
 
@@ -346,6 +348,7 @@ class NullLiteral : ASTNode {
         return "Value.nullValue";
     }
 }
+
 class ArrayLiteral : ASTNode {
     ASTNode[] elements;
 
@@ -357,6 +360,21 @@ class ArrayLiteral : ASTNode {
     override string compile() {
         string[] compiledElements = elements.map!(e => e.compile()).array;
         return "Value([" ~ compiledElements.join(", ") ~ "])";
+    }
+}
+
+class InstanceOfExpression : ASTNode {
+    ASTNode object;
+    string typeName;
+
+    this(string filename, int line, ASTNode object, string typeName) {
+        super(filename, line);
+        this.object = object;
+        this.typeName = typeName;
+    }
+
+    override string compile() {
+        return "instanceOf(" ~ object.compile() ~ ", \"" ~ typeName ~ "\")";
     }
 }
 
@@ -372,6 +390,36 @@ class FieldAccess : ASTNode {
 
     override string compile() {
         return "(" ~ object.compile() ~ ").getField(\"" ~ field ~ "\")";
+    }
+}
+
+class LogicalAndExpression : ASTNode {
+    ASTNode left;
+    ASTNode right;
+
+    this(string filename, int line, ASTNode left, ASTNode right) {
+        super(filename, line);
+        this.left = left;
+        this.right = right;
+    }
+
+    override string compile() {
+        return "logicalAnd(" ~ left.compile() ~ ", () => " ~ right.compile() ~ ")";
+    }
+}
+
+class LogicalOrExpression : ASTNode {
+    ASTNode left;
+    ASTNode right;
+
+    this(string filename, int line, ASTNode left, ASTNode right) {
+        super(filename, line);
+        this.left = left;
+        this.right = right;
+    }
+
+    override string compile() {
+        return "logicalOr(" ~ left.compile() ~ ", () => " ~ right.compile() ~ ")";
     }
 }
 
@@ -545,9 +593,13 @@ class Parser {
 
         ASTNode[] elseBody;
         if (accept("else")) {
-            expect("{");
-            while (!accept("}")) {
-                elseBody ~= parseStatement();
+            if (accept("if")) {
+                elseBody ~= parseIfStatement();
+            } else {
+                expect("{");
+                while (!accept("}")) {
+                    elseBody ~= parseStatement();
+                }
             }
         }
 
@@ -569,23 +621,41 @@ class Parser {
     }
 
     ASTNode parseExpression() {
-        ASTNode left = parsePrimary();
+        return parseLogicalOrExpression();
+    }
+
+    ASTNode parseLogicalOrExpression() {
+        ASTNode left = parseLogicalAndExpression();
+
+        while (accept("||")) {
+            ASTNode right = parseLogicalAndExpression();
+            left = new LogicalOrExpression(filename, line, left, right);
+        }
+
+        return left;
+    }
+
+    ASTNode parseLogicalAndExpression() {
+        ASTNode left = parseEqualityExpression();
+
+        while (accept("&&")) {
+            ASTNode right = parseEqualityExpression();
+            left = new LogicalAndExpression(filename, line, left, right);
+        }
+
+        return left;
+    }
+
+    ASTNode parseEqualityExpression() {
+        ASTNode left = parseRelationalExpression();
 
         while (true) {
-            if (accept(".")) {
-                string identifier = parseIdentifier();
-                if (accept("(")) {
-                    ASTNode[] args;
-                    if (!accept(")")) {
-                        do {
-                            args ~= parseExpression();
-                        } while (accept(","));
-                        expect(")");
-                    }
-                    left = new MethodCall(filename, line, left, identifier, args);
-                } else {
-                    left = new FieldAccess(filename, line, left, identifier);
-                }
+            if (accept("==")) {
+                ASTNode right = parseRelationalExpression();
+                left = new MethodCall(filename, line, left, "equal", [right]);
+            } else if (accept("!=")) {
+                ASTNode right = parseRelationalExpression();
+                left = new MethodCall(filename, line, left, "notEqual", [right]);
             } else {
                 break;
             }
@@ -594,18 +664,102 @@ class Parser {
         return left;
     }
 
+    ASTNode parseRelationalExpression() {
+        ASTNode left = parseAdditiveExpression();
+
+        while (true) {
+            if (accept("<=")) {
+                ASTNode right = parseAdditiveExpression();
+                left = new MethodCall(filename, line, left, "smallerEqual", [right]);
+            } else if (accept(">=")) {
+                ASTNode right = parseAdditiveExpression();
+                left = new MethodCall(filename, line, left, "greaterEqual", [right]);
+            } else if (accept("<")) {
+                ASTNode right = parseAdditiveExpression();
+                left = new MethodCall(filename, line, left, "smaller", [right]);
+            } else if (accept(">")) {
+                ASTNode right = parseAdditiveExpression();
+                left = new MethodCall(filename, line, left, "greater", [right]);
+            } else {
+                break;
+            }
+        }
+
+        return left;
+    }
+
+    ASTNode parseAdditiveExpression() {
+        ASTNode left = parseMultiplicativeExpression();
+
+        while (true) {
+            if (accept("+")) {
+                ASTNode right = parseMultiplicativeExpression();
+                left = new MethodCall(filename, line, left, "add", [right]);
+            } else if (accept("-")) {
+                ASTNode right = parseMultiplicativeExpression();
+                left = new MethodCall(filename, line, left, "sub", [right]);
+            } else if (accept("~")) {
+                ASTNode right = parseMultiplicativeExpression();
+                left = new MethodCall(filename, line, left, "concat", [right]);
+            } else {
+                break;
+            }
+        }
+
+        return left;
+    }
+
+    ASTNode parseMultiplicativeExpression() {
+        ASTNode left = parseUnaryExpression();
+
+        while (true) {
+            if (accept("*")) {
+                ASTNode right = parseUnaryExpression();
+                left = new MethodCall(filename, line, left, "mul", [right]);
+            } else if (accept("/")) {
+                ASTNode right = parseUnaryExpression();
+                left = new MethodCall(filename, line, left, "div", [right]);
+            } else {
+                break;
+            }
+        }
+
+        return left;
+    }
+
+    ASTNode parseUnaryExpression() {
+        if (accept("!")) {
+            ASTNode operand = parseUnaryExpression();
+            return new MethodCall(filename, line, operand, "not", []);
+        } else if (accept("-")) {
+            ASTNode operand = parseUnaryExpression();
+            return new MethodCall(filename, line, operand, "negate", []);
+        } else {
+            return parsePrimary();
+        }
+    }
+
+    ASTNode parseInstanceOf(ASTNode left) {
+        expect("(");
+        string typeName = parseIdentifier();
+        expect(")");
+        return new InstanceOfExpression(filename, line, left, typeName);
+    }
+
     ASTNode parsePrimary() {
         skipWhitespace();
         skipComments();
 
+        ASTNode expr;
+
         if (position < input.length && input[position].isDigit) {
-            return parseIntegerLiteral();
+            expr = parseIntegerLiteral();
         } else if (accept("\"")) {
-            return parseStringLiteral();
+            expr = parseStringLiteral();
         } else if (accept("null")) {
-            return new NullLiteral(filename, line);
+            expr = new NullLiteral(filename, line);
         } else if (accept("[")) {
-            return parseArrayLiteral();
+            expr = parseArrayLiteral();
         } else {
             string id = parseIdentifier();
             if (accept("(")) {
@@ -616,11 +770,36 @@ class Parser {
                     } while (accept(","));
                     expect(")");
                 }
-                return new FunctionCall(filename, line, id, args);
+                expr = new FunctionCall(filename, line, id, args);
             } else {
-                return new Identifier(filename, line, id);
+                expr = new Identifier(filename, line, id);
             }
         }
+
+        // Handle dot expressions (method calls, field accesses, and instanceOf)
+        while (true) {
+            if (accept(".instanceOf")) {
+                expr = parseInstanceOf(expr);
+            } else if (accept(".")) {
+                string identifier = parseIdentifier();
+                if (accept("(")) {
+                    ASTNode[] args;
+                    if (!accept(")")) {
+                        do {
+                            args ~= parseExpression();
+                        } while (accept(","));
+                        expect(")");
+                    }
+                    expr = new MethodCall(filename, line, expr, identifier, args);
+                } else {
+                    expr = new FieldAccess(filename, line, expr, identifier);
+                }
+            } else {
+                break;
+            }
+        }
+
+        return expr;
     }
 
     ArrayLiteral parseArrayLiteral() {

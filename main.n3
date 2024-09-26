@@ -1,0 +1,944 @@
+// main.n3
+
+class ASTNode {
+    auto filename;
+    auto line;
+
+    function init(filename, line) {
+        this.filename = filename;
+        this.line = line;
+    }
+
+    function compile() {
+        return "";
+    }
+}
+
+class Program : ASTNode {
+    auto nodes;
+
+    function init(filename, line, nodes) {
+        this.filename = filename;
+        this.line = line;
+        this.nodes = nodes;
+    }
+
+    function compile() {
+        auto compiledNodes = [];
+        auto i = 0;
+        while (i < this.nodes.length()) {
+            compiledNodes.push(this.nodes.get(i).compile());
+            i = i + 1;
+        }
+        return "import std.stdio;\nimport std.algorithm;\nimport std.array;\nimport std.exception;\nimport runtime;\n\nvoid main(string[] args) {\n    auto mod = new Module();\n" ~ compiledNodes.join("\n") ~ "\n    mod.call(\"main\", [Value(args.map!(a => Value(a.map!(c => Value(cast(int)c)).array)).array)]);\n}";
+    }
+}
+
+class FunctionDecl : ASTNode {
+    auto name;
+    auto params;
+    auto body;
+
+    function init(filename, line, name, params, body) {
+        this.filename = filename;
+        this.line = line;
+        this.name = name;
+        this.params = params;
+        this.body = body;
+    }
+
+    function compile() {
+        auto compiledBody = [];
+        auto i = 0;
+        while (i < this.body.length()) {
+            compiledBody.push(this.body.get(i).compile());
+            i = i + 1;
+        }
+
+        auto paramList = this.params.join(", ");
+        auto functionBody = compiledBody.join("\n    ");
+
+        return "mod.add(new FunctionEntry(\"" ~ this.name ~ "\", delegate Value(Value[] args) {\n" ~
+               "    enforce(args.length == " ~ this.params.length().toString() ~ ", \"" ~ this.name ~ " expects " ~ this.params.length().toString() ~ " argument(s)\");\n" ~
+               this.compileParamAssignments() ~
+               "    " ~ functionBody ~ "\n" ~
+               "}));\n";
+    }
+
+    function compileParamAssignments() {
+        auto assignments = [];
+        auto i = 0;
+        while (i < this.params.length()) {
+            assignments.push("    Value " ~ this.params.get(i) ~ " = args[" ~ i.toString() ~ "];");
+            i = i + 1;
+        }
+        return assignments.join("\n");
+    }
+}
+
+class ClassDecl : ASTNode {
+    auto name;
+    auto parent;
+    auto fields;
+    auto methods;
+
+    function init(filename, line, name, parent, fields, methods) {
+        this.filename = filename;
+        this.line = line;
+        this.name = name;
+        this.parent = parent;
+        this.fields = fields;
+        this.methods = methods;
+    }
+
+    function compile() {
+        auto compiledMethods = [];
+        auto i = 0;
+        while (i < this.methods.length()) {
+            compiledMethods.push(this.compileMethod(this.methods.get(i)));
+            i = i + 1;
+        }
+
+        auto fieldDeclarations = this.compileFieldDeclarations();
+        auto parentDeclaration = "";
+        if (this.parent.isNull()) {
+            parentDeclaration = "null";
+        } else {
+            parentDeclaration = "(cast(ClassEntry)mod.get(\"" ~ this.parent ~ "\")).classType";
+        }
+        auto fieldLiteral = "";
+        if (fieldDeclarations == "") {
+            fieldLiteral = "(Value[string]).init";
+        } else {
+            fieldLiteral = "[" ~ fieldDeclarations ~ "]";
+        }
+
+        return "auto " ~ this.name ~ "Type = new ClassType(\"" ~ this.name ~ "\", " ~ parentDeclaration ~ ", " ~ fieldLiteral ~ ");\n" ~
+               compiledMethods.join("\n") ~
+               "mod.add(new ClassEntry(\"" ~ this.name ~ "\", " ~ this.name ~ "Type));\n";
+    }
+
+    function compileFieldDeclarations() {
+        auto declarations = [];
+        auto i = 0;
+        while (i < this.fields.length()) {
+            declarations.push("\"" ~ this.fields.get(i) ~ "\": Value(0)");
+            i = i + 1;
+        }
+        return declarations.join(", ");
+    }
+
+    function compileMethod(method) {
+        auto compiledBody = [];
+        auto i = 0;
+        while (i < method.body.length()) {
+            compiledBody.push(method.body.get(i).compile());
+            i = i + 1;
+        }
+
+        auto paramList = method.params.join(", ");
+        auto functionBody = compiledBody.join("\n    ");
+
+        return this.name ~ "Type.methods[\"" ~ method.name ~ "\"] = (Value thisptr, Value[] args) {\n" ~
+               "    enforce(args.length == " ~ method.params.length().toString() ~ ", \"" ~ method.name ~ " expects " ~ method.params.length().toString() ~ " argument(s)\");\n" ~
+               method.compileParamAssignments() ~
+               "    " ~ functionBody ~ "\n" ~
+               "    return Value(0);\n" ~
+               "};\n";
+    }
+}
+
+class VariableDecl : ASTNode {
+    auto name;
+    auto initializer;
+
+    function init(filename, line, name, initializer) {
+        this.filename = filename;
+        this.line = line;
+        this.name = name;
+        this.initializer = initializer;
+    }
+
+    function compile() {
+        return "Value " ~ this.name ~ " = " ~ this.initializer.compile() ~ ";";
+    }
+}
+
+class MethodCall : ASTNode {
+    auto object;
+    auto method;
+    auto args;
+
+    function init(filename, line, object, method, args_) {
+        this.filename = filename;
+        this.line = line;
+        this.object = object;
+        this.method = method;
+        this.args = args_;
+    }
+
+    function compile() {
+        auto compiledArgs = [];
+        auto i = 0;
+        while (i < this.args.length()) {
+            compiledArgs.push(this.args.get(i).compile());
+            i = i + 1;
+        }
+        auto objectCode = "";
+        if (this.object.instanceOf(Identifier) && this.object.name == "this") {
+            objectCode = "thisptr";
+        } else {
+            objectCode = this.object.compile();
+        }
+        return "(" ~ objectCode ~ ").call(\"" ~ this.method ~ "\", [" ~ compiledArgs.join(", ") ~ "])";
+    }
+}
+
+class FunctionCall : ASTNode {
+    auto name;
+    auto args;
+
+    function init(filename, line, name, args_) {
+        this.filename = filename;
+        this.line = line;
+        this.name = name;
+        this.args = args_;
+    }
+
+    function compile() {
+        auto compiledArgs = [];
+        auto i = 0;
+        while (i < this.args.length()) {
+            compiledArgs.push(this.args.get(i).compile());
+            i = i + 1;
+        }
+        return "mod.call(\"" ~ this.name ~ "\", [" ~ compiledArgs.join(", ") ~ "])";
+    }
+}
+
+class IfStatement : ASTNode {
+    auto condition;
+    auto thenBody;
+    auto elseBody;
+
+    function init(filename, line, condition, thenBody, elseBody) {
+        this.filename = filename;
+        this.line = line;
+        this.condition = condition;
+        this.thenBody = thenBody;
+        this.elseBody = elseBody;
+    }
+
+    function compile() {
+        auto compiledCondition = this.condition.compile();
+        auto compiledThenBody = [];
+        auto compiledElseBody = [];
+
+        auto i = 0;
+        while (i < this.thenBody.length()) {
+            compiledThenBody.push(this.thenBody.get(i).compile());
+            i = i + 1;
+        }
+
+        i = 0;
+        while (i < this.elseBody.length()) {
+            compiledElseBody.push(this.elseBody.get(i).compile());
+            i = i + 1;
+        }
+
+        auto result = "if (" ~ compiledCondition ~ ".expect!int != 0) {\n" ~
+                      "    " ~ compiledThenBody.join("\n    ") ~ "\n" ~
+                      "}";
+
+        if (this.elseBody.length() > 0) {
+            result = result ~ " else {\n" ~
+                     "    " ~ compiledElseBody.join("\n    ") ~ "\n" ~
+                     "}";
+        }
+
+        return result;
+    }
+}
+
+class WhileStatement : ASTNode {
+    auto condition;
+    auto body;
+
+    function init(filename, line, condition, body) {
+        this.filename = filename;
+        this.line = line;
+        this.condition = condition;
+        this.body = body;
+    }
+
+    function compile() {
+        auto compiledCondition = this.condition.compile();
+        auto compiledBody = [];
+
+        auto i = 0;
+        while (i < this.body.length()) {
+            compiledBody.push(this.body.get(i).compile());
+            i = i + 1;
+        }
+
+        return "while (" ~ compiledCondition ~ ".expect!int != 0) {\n" ~
+            "    " ~ compiledBody.join("\n    ") ~ "\n" ~
+            "}";
+    }
+}
+
+class AssignmentStatement : ASTNode {
+    auto lhs;
+    auto rhs;
+
+    function init(filename, line, lhs, rhs) {
+        this.filename = filename;
+        this.line = line;
+        this.lhs = lhs;
+        this.rhs = rhs;
+    }
+
+    function compile() {
+        if (this.lhs.instanceOf(FieldAccess)) {
+            return "(" ~ this.lhs.object.compile() ~ ").setField(\"" ~ this.lhs.field ~ "\", " ~ this.rhs.compile() ~ ");";
+        } else {
+            return this.lhs.compile() ~ " = " ~ this.rhs.compile() ~ ";";
+        }
+    }
+}
+
+class ReturnStatement : ASTNode {
+    auto expression;
+
+    function init(filename, line, expression) {
+        this.filename = filename;
+        this.line = line;
+        this.expression = expression;
+    }
+
+    function compile() {
+        return "return " ~ this.expression.compile() ~ ";";
+    }
+}
+
+class ExpressionStatement : ASTNode {
+    auto expression;
+
+    function init(filename, line, expression) {
+        this.filename = filename;
+        this.line = line;
+        this.expression = expression;
+    }
+
+    function compile() {
+        return this.expression.compile() ~ ";";
+    }
+}
+
+class Identifier : ASTNode {
+    auto name;
+
+    function init(filename, line, name) {
+        this.filename = filename;
+        this.line = line;
+        this.name = name;
+    }
+
+    function compile() {
+        if (this.name == "this") {
+            return "thisptr";
+        }
+        return this.name;
+    }
+}
+
+class IntegerLiteral : ASTNode {
+    auto value;
+
+    function init(filename, line, value) {
+        this.filename = filename;
+        this.line = line;
+        this.value = value;
+    }
+
+    function compile() {
+        return "Value(" ~ this.value.toString() ~ ")";
+    }
+}
+
+class StringLiteral : ASTNode {
+    auto value;
+
+    function init(filename, line, value) {
+        this.filename = filename;
+        this.line = line;
+        this.value = value;
+    }
+
+    function compile() {
+        auto values = [];
+        auto i = 0;
+        while (i < this.value.length()) {
+            auto elem = "Value(" ~ this.value.get(i).toInt().toString() ~ ")";
+            values.push(elem);
+            i = i + 1;
+        }
+        return "Value([" ~ values.join(", ") ~ "])";
+    }
+}
+
+class NullLiteral : ASTNode {
+    function init(filename, line) {
+        this.filename = filename;
+        this.line = line;
+    }
+
+    function compile() {
+        return "Value.nullValue";
+    }
+}
+
+class ArrayLiteral : ASTNode {
+    auto elements;
+
+    function init(filename, line, elements) {
+        this.filename = filename;
+        this.line = line;
+        this.elements = elements;
+    }
+
+    function compile() {
+        auto compiledElements = [];
+        auto i = 0;
+        while (i < this.elements.length()) {
+            compiledElements.push(this.elements.get(i).compile());
+            i = i + 1;
+        }
+        return "Value([" ~ compiledElements.join(", ") ~ "])";
+    }
+}
+
+class InstanceOfExpression : ASTNode {
+    auto object;
+    auto typeName;
+
+    function init(filename, line, object, typeName) {
+        this.filename = filename;
+        this.line = line;
+        this.object = object;
+        this.typeName = typeName;
+    }
+
+    function compile() {
+        return "instanceOf(" ~ this.object.compile() ~ ", \"" ~ this.typeName ~ "\")";
+    }
+}
+
+class FieldAccess : ASTNode {
+    auto object;
+    auto field;
+
+    function init(filename, line, object, field) {
+        this.filename = filename;
+        this.line = line;
+        this.object = object;
+        this.field = field;
+    }
+
+    function compile() {
+        return "(" ~ this.object.compile() ~ ").getField(\"" ~ this.field ~ "\")";
+    }
+}
+
+class LogicalAndExpression : ASTNode {
+    auto left;
+    auto right;
+
+    function init(filename, line, left, right) {
+        this.filename = filename;
+        this.line = line;
+        this.left = left;
+        this.right = right;
+    }
+
+    function compile() {
+        return "logicalAnd(" ~ this.left.compile() ~ ", () => " ~ this.right.compile() ~ ")";
+    }
+}
+
+class LogicalOrExpression : ASTNode {
+    auto left;
+    auto right;
+
+    function init(filename, line, left, right) {
+        this.filename = filename;
+        this.line = line;
+        this.left = left;
+        this.right = right;
+    }
+
+    function compile() {
+        return "logicalOr(" ~ this.left.compile() ~ ", () => " ~ this.right.compile() ~ ")";
+    }
+}
+
+class Parser {
+    auto input;
+    auto filename;
+    auto position;
+    auto line;
+
+    function init(input, filename) {
+        this.input = input;
+        this.filename = filename;
+        this.position = 0;
+        this.line = 1;
+    }
+
+    function accept(s) {
+        this.skipWhitespace();
+        if (this.input.slice(this.position, this.position + s.length()) == s) {
+            this.position = this.position + s.length();
+            return 1;
+        }
+        return 0;
+    }
+
+    function expect(s) {
+        if (!this.accept(s)) {
+            // TODO: Implement proper error handling
+            print("Expected '" ~ s ~ "' at " ~ this.filename ~ ":" ~ this.line.toString());
+        }
+    }
+
+    function skipWhitespace() {
+        while (this.position < this.input.length()) {
+            auto c = this.input.get(this.position);
+            if (c == 32 || c == 9 || c == 10 || c == 13) {
+                if (c == 10) {
+                    this.line = this.line + 1;
+                }
+                this.position = this.position + 1;
+            } else {
+                break;
+            }
+        }
+    }
+
+    function skipComments() {
+        while (1) {
+            this.skipWhitespace();
+            if (this.accept("//")) {
+                while (this.position < this.input.length() && this.input.get(this.position) != 10) {
+                    this.position = this.position + 1;
+                }
+            } else if (this.accept("/*")) {
+                while (this.position < this.input.length() && !this.accept("*/")) {
+                    if (this.input.get(this.position) == 10) {
+                        this.line = this.line + 1;
+                    }
+                    this.position = this.position + 1;
+                }
+            } else {
+                break;
+            }
+        }
+    }
+
+    function parseIdentifier() {
+        this.skipWhitespace();
+        this.skipComments();
+        auto start = this.position;
+        while (this.position < this.input.length()) {
+            auto c = this.input.get(this.position);
+            if (c >= 97 && c <= 122
+                || c >= 65 && c <= 90
+                || c == 95
+                || this.position > start && c >= 48 && c <= 57
+            ) {
+                this.position = this.position + 1;
+            } else {
+                break;
+            }
+        }
+        if (start == this.position) {
+            // TODO: Implement proper error handling
+            print("Expected identifier at " ~ this.filename ~ ":" ~ this.line.toString());
+        }
+        return this.input.slice(start, this.position);
+    }
+
+    function parse() {
+        auto nodes = [];
+        while (this.position < this.input.length()) {
+            this.skipWhitespace();
+            this.skipComments();
+            if (this.accept("function")) {
+                nodes.push(this.parseFunctionDecl());
+            } else if (this.accept("class")) {
+                nodes.push(this.parseClassDecl());
+            } else {
+                break;
+            }
+        }
+        return Program(this.filename, 1, nodes);
+    }
+
+    function parseFunctionDecl() {
+        auto name = this.parseIdentifier();
+        auto params = [];
+
+        this.expect("(");
+        if (!this.accept(")")) {
+            while (1) {
+                params.push(this.parseIdentifier());
+                if (!this.accept(",")) {
+                    break;
+                }
+            }
+            this.expect(")");
+        }
+
+        auto body = [];
+        this.expect("{");
+        while (!this.accept("}")) {
+            body.push(this.parseStatement());
+        }
+
+        return FunctionDecl(this.filename, this.line, name, params, body);
+    }
+
+    function parseClassDecl() {
+        auto name = this.parseIdentifier();
+        auto parent = null;
+        if (this.accept(":")) {
+            parent = this.parseIdentifier();
+        }
+        auto fields = [];
+        auto methods = [];
+
+        this.expect("{");
+        while (!this.accept("}")) {
+            if (this.accept("function")) {
+                methods.push(this.parseFunctionDecl());
+            } else {
+                this.expect("auto");
+                fields.push(this.parseIdentifier());
+                this.expect(";");
+            }
+        }
+
+        return ClassDecl(this.filename, this.line, name, parent, fields, methods);
+    }
+
+    function parseStatement() {
+        this.skipWhitespace();
+        this.skipComments();
+
+        if (this.accept("if")) {
+            return this.parseIfStatement();
+        } else if (this.accept("while")) {
+            return this.parseWhileStatement();
+        } else if (this.accept("return")) {
+            auto expr = this.parseExpression();
+            this.expect(";");
+            return ReturnStatement(this.filename, this.line, expr);
+        } else if (this.accept("auto")) {
+            auto name = this.parseIdentifier();
+            this.expect("=");
+            auto initializer = this.parseExpression();
+            this.expect(";");
+            return VariableDecl(this.filename, this.line, name, initializer);
+        } else {
+            auto expr = this.parseExpression();
+            if (this.accept("=")) {
+                auto rhs = this.parseExpression();
+                this.expect(";");
+                return AssignmentStatement(this.filename, this.line, expr, rhs);
+            } else {
+                this.expect(";");
+                return ExpressionStatement(this.filename, this.line, expr);
+            }
+        }
+    }
+
+    function parseIfStatement() {
+        this.expect("(");
+        auto condition = this.parseExpression();
+        this.expect(")");
+
+        auto thenBody = [];
+        this.expect("{");
+        while (!this.accept("}")) {
+            thenBody.push(this.parseStatement());
+        }
+
+        auto elseBody = [];
+        if (this.accept("else")) {
+            if (this.accept("if")) {
+                elseBody.push(this.parseIfStatement());
+            } else {
+                this.expect("{");
+                while (!this.accept("}")) {
+                    elseBody.push(this.parseStatement());
+                }
+            }
+        }
+
+        return IfStatement(this.filename, this.line, condition, thenBody, elseBody);
+    }
+
+    function parseWhileStatement() {
+        this.expect("(");
+        auto condition = this.parseExpression();
+        this.expect(")");
+
+        auto body = [];
+        this.expect("{");
+        while (!this.accept("}")) {
+            body.push(this.parseStatement());
+        }
+
+        return WhileStatement(this.filename, this.line, condition, body);
+    }
+
+    function parseExpression() {
+        return this.parseLogicalOrExpression();
+    }
+
+    function parseLogicalOrExpression() {
+        auto left = this.parseLogicalAndExpression();
+
+        while (this.accept("||")) {
+            auto right = this.parseLogicalAndExpression();
+            left = LogicalOrExpression(this.filename, this.line, left, right);
+        }
+
+        return left;
+    }
+
+    function parseLogicalAndExpression() {
+        auto left = this.parseEqualityExpression();
+
+        while (this.accept("&&")) {
+            auto right = this.parseEqualityExpression();
+            left = LogicalAndExpression(this.filename, this.line, left, right);
+        }
+
+        return left;
+    }
+
+    function parseEqualityExpression() {
+        auto left = this.parseRelationalExpression();
+
+        while (1) {
+            if (this.accept("==")) {
+                auto right = this.parseRelationalExpression();
+                left = MethodCall(this.filename, this.line, left, "equal", [right]);
+            } else if (this.accept("!=")) {
+                auto right = this.parseRelationalExpression();
+                left = MethodCall(this.filename, this.line, left, "notEqual", [right]);
+            } else {
+                break;
+            }
+        }
+
+        return left;
+    }
+
+    function parseRelationalExpression() {
+        auto left = this.parseAdditiveExpression();
+
+        while (1) {
+            if (this.accept("<=")) {
+                auto right = this.parseAdditiveExpression();
+                left = MethodCall(this.filename, this.line, left, "smallerEqual", [right]);
+            } else if (this.accept(">=")) {
+                auto right = this.parseAdditiveExpression();
+                left = MethodCall(this.filename, this.line, left, "greaterEqual", [right]);
+            } else if (this.accept("<")) {
+                auto right = this.parseAdditiveExpression();
+                left = MethodCall(this.filename, this.line, left, "smaller", [right]);
+            } else if (this.accept(">")) {
+                auto right = this.parseAdditiveExpression();
+                left = MethodCall(this.filename, this.line, left, "greater", [right]);
+            } else {
+                break;
+            }
+        }
+
+        return left;
+    }
+
+    function parseAdditiveExpression() {
+        auto left = this.parseMultiplicativeExpression();
+
+        while (1) {
+            if (this.accept("+")) {
+                auto right = this.parseMultiplicativeExpression();
+                left = MethodCall(this.filename, this.line, left, "add", [right]);
+            } else if (this.accept("-")) {
+                auto right = this.parseMultiplicativeExpression();
+                left = MethodCall(this.filename, this.line, left, "sub", [right]);
+            } else if (this.accept("~")) {
+                auto right = this.parseMultiplicativeExpression();
+                left = MethodCall(this.filename, this.line, left, "concat", [right]);
+            } else {
+                break;
+            }
+        }
+
+        return left;
+    }
+
+    function parseMultiplicativeExpression() {
+        auto left = this.parseUnaryExpression();
+
+        while (1) {
+            if (this.accept("*")) {
+                auto right = this.parseUnaryExpression();
+                left = MethodCall(this.filename, this.line, left, "mul", [right]);
+            } else if (this.accept("/")) {
+                auto right = this.parseUnaryExpression();
+                left = MethodCall(this.filename, this.line, left, "div", [right]);
+            } else {
+                break;
+            }
+        }
+
+        return left;
+    }
+
+    function parseUnaryExpression() {
+        if (this.accept("!")) {
+            auto operand = this.parseUnaryExpression();
+            return MethodCall(this.filename, this.line, operand, "not", []);
+        } else if (this.accept("-")) {
+            auto operand = this.parseUnaryExpression();
+            return MethodCall(this.filename, this.line, operand, "negate", []);
+        } else {
+            return this.parsePrimary();
+        }
+    }
+
+    function parsePrimary() {
+        this.skipWhitespace();
+        this.skipComments();
+
+        auto expr = null;
+
+        if (this.position < this.input.length() && this.input.get(this.position) >= 48 && this.input.get(this.position) <= 57) {
+            expr = this.parseIntegerLiteral();
+        } else if (this.accept("\"")) {
+            expr = this.parseStringLiteral();
+        } else if (this.accept("null")) {
+            expr = NullLiteral(this.filename, this.line);
+        } else if (this.accept("[")) {
+            expr = this.parseArrayLiteral();
+        } else {
+            auto id = this.parseIdentifier();
+            if (this.accept("(")) {
+                auto args_ = [];
+                if (!this.accept(")")) {
+                    while (1) {
+                        args_.push(this.parseExpression());
+                        if (!this.accept(",")) {
+                            break;
+                        }
+                    }
+                    this.expect(")");
+                }
+                expr = FunctionCall(this.filename, this.line, id, args_);
+            } else {
+                expr = Identifier(this.filename, this.line, id);
+            }
+        }
+
+        while (1) {
+            if (this.accept(".instanceOf")) {
+                this.expect("(");
+                auto typeName = this.parseIdentifier();
+                this.expect(")");
+                expr = InstanceOfExpression(this.filename, this.line, expr, typeName);
+            } else if (this.accept(".")) {
+                auto field = this.parseIdentifier();
+                if (this.accept("(")) {
+                    auto args_ = [];
+                    if (!this.accept(")")) {
+                        while (1) {
+                            args_.push(this.parseExpression());
+                            if (!this.accept(",")) {
+                                break;
+                            }
+                        }
+                        this.expect(")");
+                    }
+                    expr = MethodCall(this.filename, this.line, expr, field, args_);
+                } else {
+                    expr = FieldAccess(this.filename, this.line, expr, field);
+                }
+            } else {
+                break;
+            }
+        }
+
+        return expr;
+    }
+
+    function parseIntegerLiteral() {
+        auto start = this.position;
+        while (this.position < this.input.length() && this.input.get(this.position) >= 48 && this.input.get(this.position) <= 57) {
+            this.position = this.position + 1;
+        }
+        auto value = this.input.slice(start, this.position).toInt();
+        return IntegerLiteral(this.filename, this.line, value);
+    }
+
+    function parseStringLiteral() {
+        auto start = this.position;
+        while (this.position < this.input.length() && this.input.get(this.position) != 34) {
+            if (this.input.get(this.position) == 92) {
+                this.position = this.position + 1;
+            }
+            this.position = this.position + 1;
+        }
+        this.expect("\"");
+        auto value = this.input.slice(start, this.position - 1);
+        return StringLiteral(this.filename, this.line, value);
+    }
+
+    function parseArrayLiteral() {
+        auto elements = [];
+        if (!this.accept("]")) {
+            while (1) {
+                elements.push(this.parseExpression());
+                if (!this.accept(",")) {
+                    break;
+                }
+            }
+            this.expect("]");
+        }
+        return ArrayLiteral(this.filename, this.line, elements);
+    }
+}
+
+function main(args_) {
+    if (args_.length() != 3) {
+        print("Usage: neat3 <input_file> <output_file>");
+        return 0;
+    }
+
+    auto inputFile = args_.get(1);
+    auto outputFile = args_.get(2);
+
+    auto input = readFile(inputFile);
+
+    auto parser = Parser(input, inputFile);
+    auto program = parser.parse();
+
+    auto output = program.compile();
+
+    writeFile(outputFile, output);
+
+    return 0;
+}

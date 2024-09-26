@@ -13,11 +13,13 @@ class Type {
 }
 
 class ClassType : Type {
+    string name;
     ClassType parent;
     Value[string] fields;
     Value delegate(Value, Value[])[string] methods;
 
-    this(ClassType parent, Value[string] fields) {
+    this(string name, ClassType parent, Value[string] fields) {
+        this.name = name;
         this.parent = parent;
         this.fields = fields;
         if (parent) {
@@ -76,6 +78,29 @@ class IntType : Type {
             case "equal":
                 enforce(args.length == 1, "equal expects 1 argument");
                 return Value(value == args[0].expect!int ? 1 : 0);
+            case "and":
+                enforce(args.length == 1, "and expects 1 argument");
+                return Value((value && args[0].expect!int) ? 1 : 0);
+            case "or":
+                enforce(args.length == 1, "or expects 1 argument");
+                return Value((value || args[0].expect!int) ? 1 : 0);
+            case "notEqual":
+                enforce(args.length == 1, "notEqual expects 1 argument");
+                return Value(value != args[0].expect!int ? 1 : 0);
+            case "smallerEqual":
+                enforce(args.length == 1, "smallerEqual expects 1 argument");
+                return Value(value <= args[0].expect!int ? 1 : 0);
+            case "greaterEqual":
+                enforce(args.length == 1, "greaterEqual expects 1 argument");
+                return Value(value >= args[0].expect!int ? 1 : 0);
+            case "not":
+                enforce(args.length == 0, "not expects 0 arguments");
+                return Value(value == 0 ? 1 : 0);
+            case "negate":
+                enforce(args.length == 0, "negate expects 0 arguments");
+                return Value(-value);
+            case "toString":
+                return Value(value.text.map!(ch => Value(cast(int) ch)).array);
             default:
                 throw new Exception("Unknown method: " ~ name);
         }
@@ -123,7 +148,17 @@ class ArrayType : Type {
             case "concat":
                 enforce(args.length == 1, "concat expects 1 argument");
                 Value[] other = args[0].expect!(Value[]);
-                return Value(arr ~ other);
+                return Value (arr ~ other);
+            case "equal":
+                import std.range : iota;
+                enforce(args.length == 1, "equal expects 1 argument");
+                Value[] other = args[0].expect!(Value[]);
+                return Value(arr.length == other.length && arr.length.iota
+                    .map!(i => arr[i].type.call("equal", arr[i], [other[i]]).expect!int)
+                    .all ? 1 : 0);
+            case "join":
+                enforce(args.length == 1, "join expects 1 argument");
+                return Value(arr.map!(a => a.expect!(Value[])).join(args[0].expect!(Value[])));
             default:
                 throw new Exception("Unknown method: " ~ name);
         }
@@ -233,6 +268,33 @@ struct Value {
     }
 }
 
+Value instanceOf(Value obj, string typeName) {
+    if (auto classType = cast(ClassType)obj.type) {
+        ClassType currentType = classType;
+        while (currentType !is null) {
+            if (currentType.name == typeName) {
+                return obj;
+            }
+            currentType = currentType.parent;
+        }
+    }
+    return Value.nullValue;
+}
+
+Value logicalAnd(Value left, Value delegate() rightThunk) {
+    if (left.expect!int == 0) {
+        return Value(0);
+    }
+    return rightThunk();
+}
+
+Value logicalOr(Value left, Value delegate() rightThunk) {
+    if (left.expect!int != 0) {
+        return Value(1);
+    }
+    return rightThunk();
+}
+
 class ModuleEntry {
     string name;
 
@@ -292,7 +354,12 @@ class Module {
     void addDefaultMethods() {
         methods["print"] = (Value[] args) {
             enforce(args.length == 1, "print expects 1 argument");
-            writeln(args[0].toString());
+            if (cast(ArrayType) args[0].type) {
+                auto str = args[0].expect!(Value[]).map!(v => cast(immutable char)v.expect!int).array;
+                writeln(str);
+            } else {
+                writeln(args[0].toString());
+            }
             return Value(0); // Return 0 as a convention
         };
 
@@ -350,7 +417,9 @@ unittest {
     };
 
     // Add the function to the module
-    mod.add(new FunctionEntry("fibonacci", fibFunc)); // Test the fibonacci function
+    mod.add(new FunctionEntry("fibonacci", fibFunc));
+
+    // Test the fibonacci function
     assert(mod.call("fibonacci", [Value(0)]).expect!int == 0);
     assert(mod.call("fibonacci", [Value(1)]).expect!int == 1);
     assert(mod.call("fibonacci", [Value(2)]).expect!int == 1);
@@ -368,7 +437,7 @@ unittest {
     }
 
     // Define a simple class
-    auto personType = new ClassType(null, [
+    auto personType = new ClassType("Person", null, [
         "name": Value(Value[].init),
         "age": Value(0)
     ]);
@@ -387,6 +456,17 @@ unittest {
     auto greeting = person.call("sayHello", []);
 
     assert(greeting.expect!(Value[]).map!(v => cast(char)v.expect!int).array == "Alice says hello!");
+
+    // Test logical AND
+    assert(logicalAnd(Value(1), () => Value(1)).expect!int == 1);
+    assert(logicalAnd(Value(0), () => Value(1)).expect!int == 0);
+    assert(logicalAnd(Value(1), () => Value(0)).expect!int == 0);
+
+    // Test logical OR
+    assert(logicalOr(Value(1), () => Value(1)).expect!int == 1);
+    assert(logicalOr(Value(0), () => Value(1)).expect!int == 1);
+    assert(logicalOr(Value(1), () => Value(0)).expect!int == 1);
+    assert(logicalOr(Value(0), () => Value(0)).expect!int == 0);
 
     writeln("All tests passed!");
 }
