@@ -123,13 +123,7 @@ class ArrayType : Type {
                 return Value(cast(int)arr.length);
             case "push":
                 enforce(args.length == 1, "push expects 1 argument");
-                arr ~= args[0];
-                return Value(cast(int)arr.length);
-            case "pop":
-                enforce(arr.length > 0, "Cannot pop from empty array");
-                Value last = arr[$ - 1];
-                arr = arr[0 .. $ - 1];
-                return last;
+                return Value(arr ~ args[0]);  // Return a new array with the element added
             case "get":
                 enforce(args.length == 1, "get expects 1 argument");
                 int index = args[0].expect!int;
@@ -151,7 +145,7 @@ class ArrayType : Type {
             case "concat":
                 enforce(args.length == 1, "concat expects 1 argument");
                 Value[] other = args[0].expect!(Value[]);
-                return Value (arr ~ other);
+                return Value(arr ~ other);
             case "equal":
                 import std.range : iota;
                 enforce(args.length == 1, "equal expects 1 argument");
@@ -289,6 +283,12 @@ Value instanceOf(Value obj, string typeName) {
 }
 
 Value logicalAnd(Value left, Value delegate() rightThunk) {
+    if (cast(NullType) left.type) {
+        return Value(0);
+    }
+    if (cast(ClassType) left.type) {
+        return rightThunk();
+    }
     if (left.expect!int == 0) {
         return Value(0);
     }
@@ -296,6 +296,12 @@ Value logicalAnd(Value left, Value delegate() rightThunk) {
 }
 
 Value logicalOr(Value left, Value delegate() rightThunk) {
+    if (cast(NullType) left.type) {
+        return rightThunk();
+    }
+    if (cast(ClassType) left.type) {
+        return Value(1);
+    }
     if (left.expect!int != 0) {
         return Value(1);
     }

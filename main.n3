@@ -27,7 +27,7 @@ class Program : ASTNode {
         auto compiledNodes = [];
         auto i = 0;
         while (i < this.nodes.length()) {
-            compiledNodes.push(this.nodes.get(i).compile());
+            compiledNodes = compiledNodes.push(this.nodes.get(i).compile());
             i = i + 1;
         }
         return "import std.stdio;\nimport std.algorithm;\nimport std.array;\nimport std.exception;\nimport runtime;\n\nvoid main(string[] args) {\n    auto mod = new Module();\n" ~ compiledNodes.join("\n") ~ "\n    mod.call(\"main\", [Value(args.map!(a => Value(a.map!(c => Value(cast(int)c)).array)).array)]);\n}";
@@ -51,7 +51,7 @@ class FunctionDecl : ASTNode {
         auto compiledBody = [];
         auto i = 0;
         while (i < this.body.length()) {
-            compiledBody.push(this.body.get(i).compile());
+            compiledBody = compiledBody.push(this.body.get(i).compile());
             i = i + 1;
         }
 
@@ -69,7 +69,7 @@ class FunctionDecl : ASTNode {
         auto assignments = [];
         auto i = 0;
         while (i < this.params.length()) {
-            assignments.push("    Value " ~ this.params.get(i) ~ " = args[" ~ i.toString() ~ "];");
+            assignments = assignments.push("    Value " ~ this.params.get(i) ~ " = args[" ~ i.toString() ~ "];");
             i = i + 1;
         }
         return assignments.join("\n");
@@ -95,13 +95,13 @@ class ClassDecl : ASTNode {
         auto compiledMethods = [];
         auto i = 0;
         while (i < this.methods.length()) {
-            compiledMethods.push(this.compileMethod(this.methods.get(i)));
+            compiledMethods = compiledMethods.push(this.compileMethod(this.methods.get(i)));
             i = i + 1;
         }
 
         auto fieldDeclarations = this.compileFieldDeclarations();
         auto parentDeclaration = "";
-        if (this.parent.isNull()) {
+        if (this.parent == "") {
             parentDeclaration = "null";
         } else {
             parentDeclaration = "(cast(ClassEntry)mod.get(\"" ~ this.parent ~ "\")).classType";
@@ -122,7 +122,7 @@ class ClassDecl : ASTNode {
         auto declarations = [];
         auto i = 0;
         while (i < this.fields.length()) {
-            declarations.push("\"" ~ this.fields.get(i) ~ "\": Value(0)");
+            declarations = declarations.push("\"" ~ this.fields.get(i) ~ "\": Value(0)");
             i = i + 1;
         }
         return declarations.join(", ");
@@ -132,7 +132,7 @@ class ClassDecl : ASTNode {
         auto compiledBody = [];
         auto i = 0;
         while (i < method.body.length()) {
-            compiledBody.push(method.body.get(i).compile());
+            compiledBody = compiledBody.push(method.body.get(i).compile());
             i = i + 1;
         }
 
@@ -181,7 +181,7 @@ class MethodCall : ASTNode {
         auto compiledArgs = [];
         auto i = 0;
         while (i < this.args.length()) {
-            compiledArgs.push(this.args.get(i).compile());
+            compiledArgs = compiledArgs.push(this.args.get(i).compile());
             i = i + 1;
         }
         auto objectCode = "";
@@ -209,7 +209,7 @@ class FunctionCall : ASTNode {
         auto compiledArgs = [];
         auto i = 0;
         while (i < this.args.length()) {
-            compiledArgs.push(this.args.get(i).compile());
+            compiledArgs = compiledArgs.push(this.args.get(i).compile());
             i = i + 1;
         }
         return "mod.call(\"" ~ this.name ~ "\", [" ~ compiledArgs.join(", ") ~ "])";
@@ -236,13 +236,13 @@ class IfStatement : ASTNode {
 
         auto i = 0;
         while (i < this.thenBody.length()) {
-            compiledThenBody.push(this.thenBody.get(i).compile());
+            compiledThenBody = compiledThenBody.push(this.thenBody.get(i).compile());
             i = i + 1;
         }
 
         i = 0;
         while (i < this.elseBody.length()) {
-            compiledElseBody.push(this.elseBody.get(i).compile());
+            compiledElseBody = compiledElseBody.push(this.elseBody.get(i).compile());
             i = i + 1;
         }
 
@@ -277,7 +277,7 @@ class WhileStatement : ASTNode {
 
         auto i = 0;
         while (i < this.body.length()) {
-            compiledBody.push(this.body.get(i).compile());
+            compiledBody = compiledBody.push(this.body.get(i).compile());
             i = i + 1;
         }
 
@@ -299,7 +299,7 @@ class AssignmentStatement : ASTNode {
     }
 
     function compile() {
-        if (this.lhs.instanceOf(FieldAccess)) {
+        if (!this.lhs.instanceOf(FieldAccess).isNull()) {
             return "(" ~ this.lhs.object.compile() ~ ").setField(\"" ~ this.lhs.field ~ "\", " ~ this.rhs.compile() ~ ");";
         } else {
             return this.lhs.compile() ~ " = " ~ this.rhs.compile() ~ ";";
@@ -379,8 +379,7 @@ class StringLiteral : ASTNode {
         auto values = [];
         auto i = 0;
         while (i < this.value.length()) {
-            auto elem = "Value(" ~ this.value.get(i).toInt().toString() ~ ")";
-            values.push(elem);
+            values = values.push("Value(" ~ this.value.get(i).toString() ~ ")");
             i = i + 1;
         }
         return "Value([" ~ values.join(", ") ~ "])";
@@ -411,7 +410,7 @@ class ArrayLiteral : ASTNode {
         auto compiledElements = [];
         auto i = 0;
         while (i < this.elements.length()) {
-            compiledElements.push(this.elements.get(i).compile());
+            compiledElements = compiledElements.push(this.elements.get(i).compile());
             i = i + 1;
         }
         return "Value([" ~ compiledElements.join(", ") ~ "])";
@@ -576,9 +575,9 @@ class Parser {
             this.skipWhitespace();
             this.skipComments();
             if (this.accept("function")) {
-                nodes.push(this.parseFunctionDecl());
+                nodes = nodes.push(this.parseFunctionDecl());
             } else if (this.accept("class")) {
-                nodes.push(this.parseClassDecl());
+                nodes = nodes.push(this.parseClassDecl());
             } else {
                 break;
             }
@@ -593,7 +592,7 @@ class Parser {
         this.expect("(");
         if (!this.accept(")")) {
             while (1) {
-                params.push(this.parseIdentifier());
+                params = params.push(this.parseIdentifier());
                 if (!this.accept(",")) {
                     break;
                 }
@@ -604,7 +603,7 @@ class Parser {
         auto body = [];
         this.expect("{");
         while (!this.accept("}")) {
-            body.push(this.parseStatement());
+            body = body.push(this.parseStatement());
         }
 
         return FunctionDecl(this.filename, this.line, name, params, body);
@@ -612,7 +611,7 @@ class Parser {
 
     function parseClassDecl() {
         auto name = this.parseIdentifier();
-        auto parent = null;
+        auto parent = "";
         if (this.accept(":")) {
             parent = this.parseIdentifier();
         }
@@ -622,10 +621,10 @@ class Parser {
         this.expect("{");
         while (!this.accept("}")) {
             if (this.accept("function")) {
-                methods.push(this.parseFunctionDecl());
+                methods = methods.push(this.parseFunctionDecl());
             } else {
                 this.expect("auto");
-                fields.push(this.parseIdentifier());
+                fields = fields.push(this.parseIdentifier());
                 this.expect(";");
             }
         }
@@ -672,17 +671,17 @@ class Parser {
         auto thenBody = [];
         this.expect("{");
         while (!this.accept("}")) {
-            thenBody.push(this.parseStatement());
+            thenBody = thenBody.push(this.parseStatement());
         }
 
         auto elseBody = [];
         if (this.accept("else")) {
             if (this.accept("if")) {
-                elseBody.push(this.parseIfStatement());
+                elseBody = elseBody.push(this.parseIfStatement());
             } else {
                 this.expect("{");
                 while (!this.accept("}")) {
-                    elseBody.push(this.parseStatement());
+                    elseBody = elseBody.push(this.parseStatement());
                 }
             }
         }
@@ -698,7 +697,7 @@ class Parser {
         auto body = [];
         this.expect("{");
         while (!this.accept("}")) {
-            body.push(this.parseStatement());
+            body = body.push(this.parseStatement());
         }
 
         return WhileStatement(this.filename, this.line, condition, body);
@@ -823,6 +822,13 @@ class Parser {
         }
     }
 
+    function parseInstanceOf(left) {
+        this.expect("(");
+        auto typeName = this.parseIdentifier();
+        this.expect(")");
+        return InstanceOfExpression(this.filename, this.line, left, typeName);
+    }
+
     function parsePrimary() {
         this.skipWhitespace();
         this.skipComments();
@@ -843,7 +849,7 @@ class Parser {
                 auto args_ = [];
                 if (!this.accept(")")) {
                     while (1) {
-                        args_.push(this.parseExpression());
+                        args_ = args_.push(this.parseExpression());
                         if (!this.accept(",")) {
                             break;
                         }
@@ -858,26 +864,23 @@ class Parser {
 
         while (1) {
             if (this.accept(".instanceOf")) {
-                this.expect("(");
-                auto typeName = this.parseIdentifier();
-                this.expect(")");
-                expr = InstanceOfExpression(this.filename, this.line, expr, typeName);
+                expr = this.parseInstanceOf(expr);
             } else if (this.accept(".")) {
-                auto field = this.parseIdentifier();
+                auto identifier = this.parseIdentifier();
                 if (this.accept("(")) {
                     auto args_ = [];
                     if (!this.accept(")")) {
                         while (1) {
-                            args_.push(this.parseExpression());
+                            args_ = args_.push(this.parseExpression());
                             if (!this.accept(",")) {
                                 break;
                             }
                         }
                         this.expect(")");
                     }
-                    expr = MethodCall(this.filename, this.line, expr, field, args_);
+                    expr = MethodCall(this.filename, this.line, expr, identifier, args_);
                 } else {
-                    expr = FieldAccess(this.filename, this.line, expr, field);
+                    expr = FieldAccess(this.filename, this.line, expr, identifier);
                 }
             } else {
                 break;
@@ -885,6 +888,20 @@ class Parser {
         }
 
         return expr;
+    }
+
+    function parseArrayLiteral() {
+        auto elements = [];
+        if (!this.accept("]")) {
+            while (1) {
+                elements = elements.push(this.parseExpression());
+                if (!this.accept(",")) {
+                    break;
+                }
+            }
+            this.expect("]");
+        }
+        return ArrayLiteral(this.filename, this.line, elements);
     }
 
     function parseIntegerLiteral() {
@@ -903,33 +920,18 @@ class Parser {
             if (this.input.get(this.position) == 92) {
                 this.position = this.position + 1;
                 // 'n'
-                print("backslash proc");
                 if (this.input.get(this.position) == 110) {
-                    literal.push(10);
+                    literal = literal.push(10);
                 } else {
-                    literal.push(this.input.get(this.position));
+                    literal = literal.push(this.input.get(this.position));
                 }
             } else {
-                literal.push(this.input.get(this.position));
+                literal = literal.push(this.input.get(this.position));
             }
             this.position = this.position + 1;
         }
         this.expect("\"");
         return StringLiteral(this.filename, this.line, literal);
-    }
-
-    function parseArrayLiteral() {
-        auto elements = [];
-        if (!this.accept("]")) {
-            while (1) {
-                elements.push(this.parseExpression());
-                if (!this.accept(",")) {
-                    break;
-                }
-            }
-            this.expect("]");
-        }
-        return ArrayLiteral(this.filename, this.line, elements);
     }
 }
 
