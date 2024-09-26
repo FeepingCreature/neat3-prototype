@@ -506,8 +506,8 @@ class Parser {
 
     function expect(s) {
         if (!this.accept(s)) {
-            // TODO: Implement proper error handling
             print("Expected '" ~ s ~ "' at " ~ this.filename ~ ":" ~ this.line.toString());
+            assert(0);
         }
     }
 
@@ -562,8 +562,8 @@ class Parser {
             }
         }
         if (start == this.position) {
-            // TODO: Implement proper error handling
             print("Expected identifier at " ~ this.filename ~ ":" ~ this.line.toString());
+            assert(0);
         }
         return this.input.slice(start, this.position);
     }

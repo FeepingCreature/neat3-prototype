@@ -1,10 +1,11 @@
 import std.algorithm;
 import std.array;
-import std.stdio;
 import std.conv;
 import std.exception;
-import std.traits;
 import std.file;
+import std.format;
+import std.stdio;
+import std.traits;
 
 class Type {
     Value call(string name, Value thisptr, Value[] args) {
@@ -118,6 +119,7 @@ class ArrayType : Type {
         Value[] arr = thisptr.expect!(Value[]);
         switch (name) {
             case "length":
+                enforce(args.length == 0, "length expects 0 arguments");
                 return Value(cast(int)arr.length);
             case "push":
                 enforce(args.length == 1, "push expects 1 argument");
@@ -143,7 +145,8 @@ class ArrayType : Type {
                 enforce(args.length == 2, "slice expects 2 arguments");
                 int start = args[0].expect!int;
                 int end = args[1].expect!int;
-                enforce(start >= 0 && end <= arr.length && start <= end, "Invalid slice range");
+                enforce(start >= 0 && end <= arr.length && start <= end,
+                    format!"Invalid slice range: %s .. %s not in 0 .. %s"(start, end, arr.length));
                 return Value(arr[start .. end]);
             case "concat":
                 enforce(args.length == 1, "concat expects 1 argument");
@@ -159,6 +162,10 @@ class ArrayType : Type {
             case "join":
                 enforce(args.length == 1, "join expects 1 argument");
                 return Value(arr.map!(a => a.expect!(Value[])).join(args[0].expect!(Value[])));
+            case "toInt":
+                enforce(args.length == 0, "toInt expects 0 arguments");
+                auto str = arr.map!(v => cast(immutable char)v.expect!int).array;
+                return Value(str.parse!int);
             default:
                 throw new Exception("Unknown method: " ~ name);
         }
@@ -376,6 +383,13 @@ class Module {
             string content = args[1].expect!(Value[]).map!(v => cast(immutable char)v.expect!int).array;
             std.file.write(filename, content);
             return Value(0);
+        };
+
+        methods["assert"] = (Value[] args) {
+            enforce(args.length == 1, "assert expects 1 argument");
+            int value = args[0].expect!int;
+            assert(value);
+            return Value(0); // Return 0 as a convention
         };
     }
 
