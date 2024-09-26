@@ -398,7 +398,7 @@ class Module {
     }
 
     ModuleEntry get(string name) {
-        enforce(name in entries, "Entry not found: " ~ name);
+        enforce(name in entries, format!"Entry not found: %s in %s"(name, entries.keys));
         return entries[name];
     }
 

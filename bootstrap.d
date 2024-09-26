@@ -823,16 +823,22 @@ class Parser {
     }
 
     StringLiteral parseStringLiteral() {
-        int start = position;
+        string literal;
         while (position < input.length && input[position] != '"') {
             if (input[position] == '\\') {
                 position++;
+                if (input[position] == 'n') {
+                    literal ~= '\n';
+                } else {
+                    literal ~= input[position];
+                }
+            } else {
+                literal ~= input[position];
             }
             position++;
         }
         expect("\"");
-        string value = input[start .. position - 1];
-        return new StringLiteral(filename, line, value);
+        return new StringLiteral(filename, line, literal);
     }
 }
 

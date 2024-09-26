@@ -497,7 +497,9 @@ class Parser {
 
     function accept(s) {
         this.skipWhitespace();
-        if (this.input.slice(this.position, this.position + s.length()) == s) {
+        if (this.position + s.length() <= this.input.length()
+            && this.input.slice(this.position, this.position + s.length()) == s)
+        {
             this.position = this.position + s.length();
             return 1;
         }
@@ -895,16 +897,25 @@ class Parser {
     }
 
     function parseStringLiteral() {
-        auto start = this.position;
+        auto literal = [];
         while (this.position < this.input.length() && this.input.get(this.position) != 34) {
+            // '\'
             if (this.input.get(this.position) == 92) {
                 this.position = this.position + 1;
+                // 'n'
+                print("backslash proc");
+                if (this.input.get(this.position) == 110) {
+                    literal.push(10);
+                } else {
+                    literal.push(this.input.get(this.position));
+                }
+            } else {
+                literal.push(this.input.get(this.position));
             }
             this.position = this.position + 1;
         }
         this.expect("\"");
-        auto value = this.input.slice(start, this.position - 1);
-        return StringLiteral(this.filename, this.line, value);
+        return StringLiteral(this.filename, this.line, literal);
     }
 
     function parseArrayLiteral() {
